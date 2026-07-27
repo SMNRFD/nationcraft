@@ -111,5 +111,5 @@ Yasin Aryanfard Contact:
 - Hugging Face: [ysn-rfd](https://huggingface.co/ysn-rfd)
 
 Amir Hossein Contact:
-- Telegram: [@Amir_hosseim](https://t.me/ysnrfd)
+- Telegram: [@Amir_hosseim](https://t.me/@Amir_hosseim)
 - GitHub: [amirSAV](https://github.com/amirSAV)
