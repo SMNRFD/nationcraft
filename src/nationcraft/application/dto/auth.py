@@ -27,6 +27,10 @@ class LogoutRequest(BaseModel):
     refresh_token: str
 
 
+class UpdateLocaleRequest(BaseModel):
+    locale: str = Field(min_length=2, max_length=8)
+
+
 class PlayerDTO(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int

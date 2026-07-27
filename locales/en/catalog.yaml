@@ -2,7 +2,7 @@
 common:
   welcome: "Welcome to NationCraft, {username}!"
   back: "Back"
-  cancel: "Cancel"
+  cancel: "Action cancelled"
   confirm: "Confirm"
   loading: "Loading..."
   error: "Error: {message}"
@@ -13,7 +13,7 @@ common:
     page: "Page {current}/{total}"
 
 menu:
-  home: "Main menu"
+  home: "🌍 Main menu"
   country: "Country"
   production: "Production"
   military: "Military"
@@ -25,12 +25,27 @@ menu:
   notifications: "Notifications"
   settings: "Settings"
 
+language:
+  choose: "Choose your language:"
+  set_to: "Language set to {language}"
+
+help:
+  body: |
+    *Commands*
+    /start — main menu
+    /register — create account
+    /login — sign in
+    /play — open the game dashboard
+    /cancel — abort current action
+    /language — switch language
+
 auth:
-  register_prompt: "Please choose a password (min 8 chars)."
-  register_success: "Welcome, {username}! Your account has been created."
+  register_prompt: "Please choose a password (min 8 chars). I will hash it with Argon2id."
+  register_prompt_short: "Type /register to create an account, or /login if you already have one."
+  register_success: "Welcome, {username}! Your access token has been saved.\n\nType /play to choose a country."
   login_prompt: "Please send your password."
-  login_success: "Logged in successfully."
-  login_failed: "Login failed: {message}"
+  login_success: "✅ Logged in. Type /play to continue."
+  login_failed: "❌ Login failed: {message}"
   password_too_short: "Password too short. Min 8 characters."
 
 country:
@@ -74,3 +89,5 @@ errors:
   forbidden: "You don't have permission for this action."
   not_found: "Not found."
   internal: "Internal error. Please try again later."
+  api_unreachable: "⚠️ Cannot reach the game server. Please make sure the API is running (python main.py --only api) and try again."
+  error_with_message: "❌ {message}"

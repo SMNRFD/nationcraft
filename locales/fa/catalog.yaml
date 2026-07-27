@@ -2,7 +2,7 @@
 common:
   welcome: "به NationCraft خوش آمدید، {username}!"
   back: "بازگشت"
-  cancel: "لغو"
+  cancel: "عملیات لغو شد"
   confirm: "تأیید"
   loading: "در حال بارگذاری..."
   error: "خطا: {message}"
@@ -13,7 +13,7 @@ common:
     page: "صفحه {current}/{total}"
 
 menu:
-  home: "منوی اصلی"
+  home: "🌍 منوی اصلی"
   country: "کشور"
   production: "تولید"
   military: "نظامی"
@@ -25,12 +25,27 @@ menu:
   notifications: "اعلان‌ها"
   settings: "تنظیمات"
 
+language:
+  choose: "زبان خود را انتخاب کنید:"
+  set_to: "زبان تنظیم شد به {language}"
+
+help:
+  body: |
+    *دستورات*
+    /start — منوی اصلی
+    /register — ساخت حساب
+    /login — ورود
+    /play — باز کردن داشبورد بازی
+    /cancel — لغو عملیات فعلی
+    /language — تغییر زبان
+
 auth:
-  register_prompt: "یک رمز عبور انتخاب کنید (حداقل ۸ کاراکتر)."
-  register_success: "خوش آمدید، {username}! حساب شما ساخته شد."
+  register_prompt: "یک رمز عبور انتخاب کنید (حداقل ۸ کاراکتر). با Argon2id هش می‌شود."
+  register_prompt_short: "برای ساخت حساب /register را بفرستید، یا اگر حساب دارید /login را بزنید."
+  register_success: "خوش آمدید، {username}! توکن ذخیره شد.\n\nبرای انتخاب کشور /play را بزنید."
   login_prompt: "رمز عبور خود را بفرستید."
-  login_success: "ورود با موفقیت انجام شد."
-  login_failed: "ورود ناموفق: {message}"
+  login_success: "✅ وارد شدید. برای ادامه /play را بزنید."
+  login_failed: "❌ ورود ناموفق: {message}"
   password_too_short: "رمز عبور خیلی کوتاه است. حداقل ۸ کاراکتر."
 
 country:
@@ -74,3 +89,5 @@ errors:
   forbidden: "شما اجازه این کار را ندارید."
   not_found: "یافت نشد."
   internal: "خطای داخلی. لطفاً بعداً دوباره تلاش کنید."
+  api_unreachable: "⚠️ اتصال به سرور بازی برقرار نشد. مطمئن شوید API در حال اجراست (python main.py --only api) و دوباره تلاش کنید."
+  error_with_message: "❌ {message}"

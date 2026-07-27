@@ -17,11 +17,19 @@ from nationcraft.core.logging import configure_logging, get_logger
 
 log = get_logger(__name__)
 
+# Module-level reference to the auth middleware so handlers can
+# invalidate the locale cache after a successful /language change.
+_auth_middleware: AuthMiddleware | None = None
+
 
 def build_dispatcher() -> Dispatcher:
+    global _auth_middleware
     dp = Dispatcher(storage=MemoryStorage())
-    dp.message.middleware(AuthMiddleware(api_client))
-    dp.callback_query.middleware(AuthMiddleware(api_client))
+    # Use the same AuthMiddleware instance for both message and callback
+    # so the locale cache is shared.
+    _auth_middleware = AuthMiddleware(api_client)
+    dp.message.middleware(_auth_middleware)
+    dp.callback_query.middleware(_auth_middleware)
     dp.message.middleware(RateLimitMiddleware())
     dp.callback_query.middleware(RateLimitMiddleware())
     dp.include_router(commands_router)

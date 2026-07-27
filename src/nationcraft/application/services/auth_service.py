@@ -18,6 +18,7 @@ from nationcraft.core.events import Event, event_bus
 from nationcraft.core.exceptions import (
     AuthenticationError,
     ConflictError,
+    NotFoundError,
     RateLimitError,
     ValidationError,
 )
@@ -155,6 +156,36 @@ class AuthService:
             .returning(SessionModel.id)
         )
         return len(list(result.scalars()))
+
+    async def set_locale(self, player_id: int, locale: str) -> PlayerDTO:
+        """Update the player's preferred locale. Used by the bot's /language command."""
+        from nationcraft.core.config import settings
+        supported = settings.supported_locales_list
+        if locale not in supported:
+            raise ValidationError(
+                f"unsupported locale '{locale}'. Supported: {', '.join(supported)}",
+                code="unsupported_locale",
+            )
+        # Use a SELECT to avoid stale identity-map entries from prior commits.
+        from sqlalchemy import select
+        player = await self.session.scalar(
+            select(PlayerModel).where(PlayerModel.id == player_id)
+        )
+        if player is None:
+            raise NotFoundError("player not found")
+        player.locale = locale
+        await self.session.flush()
+        return self._player_dto(player)
+
+    async def get_player(self, player_id: int) -> PlayerDTO:
+        """Return the current player state (used by the bot to read locale, etc.)."""
+        from sqlalchemy import select
+        player = await self.session.scalar(
+            select(PlayerModel).where(PlayerModel.id == player_id)
+        )
+        if player is None:
+            raise NotFoundError("player not found")
+        return self._player_dto(player)
 
     async def _save_session(self, player_id: int, refresh_token: str) -> None:
         self.session.add(SessionModel(

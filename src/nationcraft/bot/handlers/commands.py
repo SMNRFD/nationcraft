@@ -1,4 +1,4 @@
-"""Command handlers: /start, /help, /login, /register, /play, /cancel."""
+"""Command handlers: /start, /help, /login, /register, /play, /cancel, /language."""
 from __future__ import annotations
 
 from aiogram import Router
@@ -7,108 +7,131 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 
 from nationcraft.bot.api_client import api_client
-from nationcraft.bot.keyboards import main_menu_keyboard
+from nationcraft.bot.keyboards import InlineKeyboardBuilder, main_menu_keyboard
 from nationcraft.bot.handlers.states.auth import AuthStates
+from nationcraft.core.exceptions import NationCraftError
+from nationcraft.core.i18n import _
 from nationcraft.core.logging import get_logger
 
 log = get_logger(__name__)
 router = Router()
 
 
+def _language_label(code: str) -> str:
+    """Human-readable label for a locale code."""
+    return {
+        "en": "🇬🇧 English",
+        "fa": "🇮🇷 فارسی",
+    }.get(code, code)
+
+
 @router.message(CommandStart())
-async def cmd_start(message: Message, state: FSMContext) -> None:
+async def cmd_start(message: Message, state: FSMContext, locale: str = "en") -> None:
     await state.clear()
     await message.answer(
-        "🏰 *Welcome to NationCraft*\n\n"
-        "Become the ruler of a country and lead it to greatness.\n\n"
-        "Type /register to create an account, or /login if you already have one.",
+        _("common.welcome", locale=locale, username=message.from_user.full_name)
+        + "\n\n"
+        + _("auth.register_prompt_short", locale=locale),
         reply_markup=main_menu_keyboard(),
         parse_mode="Markdown",
     )
 
 
 @router.message(Command("help"))
-async def cmd_help(message: Message) -> None:
+async def cmd_help(message: Message, locale: str = "en") -> None:
     await message.answer(
-        "*Commands*\n"
-        "/start — main menu\n"
-        "/register — create account\n"
-        "/login — sign in\n"
-        "/play — open the game dashboard\n"
-        "/cancel — abort current action\n"
-        "/language — switch language",
+        _("help.body", locale=locale),
         parse_mode="Markdown",
     )
 
 
 @router.message(Command("register"))
-async def cmd_register(message: Message, state: FSMContext) -> None:
+async def cmd_register(message: Message, state: FSMContext, locale: str = "en") -> None:
     await state.set_state(AuthStates.waiting_for_new_password)
-    await message.answer(
-        "Please choose a password (min 8 chars). I will hash it with Argon2id."
-    )
+    await message.answer(_("auth.register_prompt", locale=locale))
 
 
 @router.message(AuthStates.waiting_for_new_password)
-async def process_register(message: Message, state: FSMContext) -> None:
+async def process_register(message: Message, state: FSMContext, locale: str = "en") -> None:
     password = (message.text or "").strip()
     if len(password) < 8:
-        await message.answer("Password too short. Min 8 characters.")
+        await message.answer(_("auth.password_too_short", locale=locale))
         return
     user = message.from_user
     try:
-        data = await api_client.register(
+        await api_client.register(
             telegram_id=user.id, password=password,
-            username=user.username, locale=(user.language_code or "en")[:2],
+            username=user.username, locale=locale,
         )
+    except NationCraftError as exc:
+        await message.answer(_("errors.error_with_message", locale=locale, message=str(exc)))
+        return
     except Exception as exc:  # noqa: BLE001
-        await message.answer(f"❌ Registration failed: {exc}")
+        log.exception("bot.register.failed", error=str(exc))
+        await message.answer(_("errors.internal", locale=locale))
         return
     await state.clear()
     await message.answer(
-        f"✅ Welcome, *{user.full_name}*!\nYour access token has been saved.\n\n"
-        "Type /play to choose a country.",
+        _("auth.register_success", locale=locale, username=user.full_name),
         parse_mode="Markdown",
         reply_markup=main_menu_keyboard(),
     )
 
 
 @router.message(Command("login"))
-async def cmd_login(message: Message, state: FSMContext) -> None:
+async def cmd_login(message: Message, state: FSMContext, locale: str = "en") -> None:
     await state.set_state(AuthStates.waiting_for_password)
-    await message.answer("Please send your password.")
+    await message.answer(_("auth.login_prompt", locale=locale))
 
 
 @router.message(AuthStates.waiting_for_password)
-async def process_login(message: Message, state: FSMContext) -> None:
+async def process_login(message: Message, state: FSMContext, locale: str = "en") -> None:
     password = (message.text or "").strip()
     user = message.from_user
     try:
         await api_client.login(telegram_id=user.id, password=password)
+    except NationCraftError as exc:
+        await message.answer(_("auth.login_failed", locale=locale, message=str(exc)))
+        return
     except Exception as exc:  # noqa: BLE001
-        await message.answer(f"❌ Login failed: {exc}")
+        log.exception("bot.login.failed", error=str(exc))
+        await message.answer(_("errors.internal", locale=locale))
         return
     await state.clear()
-    await message.answer("✅ Logged in. Type /play to continue.", reply_markup=main_menu_keyboard())
+    await message.answer(
+        _("auth.login_success", locale=locale),
+        reply_markup=main_menu_keyboard(),
+    )
 
 
 @router.message(Command("play"))
-async def cmd_play(message: Message) -> None:
-    await message.answer("🌍 Main menu:", reply_markup=main_menu_keyboard())
+async def cmd_play(message: Message, locale: str = "en") -> None:
+    await message.answer(
+        _("menu.home", locale=locale),
+        reply_markup=main_menu_keyboard(),
+    )
 
 
 @router.message(Command("cancel"))
-async def cmd_cancel(message: Message, state: FSMContext) -> None:
+async def cmd_cancel(message: Message, state: FSMContext, locale: str = "en") -> None:
     await state.clear()
-    await message.answer("Action cancelled.", reply_markup=main_menu_keyboard())
+    await message.answer(
+        _("common.cancel", locale=locale),
+        reply_markup=main_menu_keyboard(),
+    )
 
 
 @router.message(Command("language"))
-async def cmd_language(message: Message) -> None:
-    from nationcraft.bot.keyboards import InlineKeyboardBuilder
+async def cmd_language(message: Message, locale: str = "en") -> None:
+    """Show a language picker. Selection is handled by ``cb_language``."""
     from nationcraft.core.config import settings
     kb = InlineKeyboardBuilder()
     for loc in settings.supported_locales_list:
-        kb.button(text=loc, callback_data=f"lang:{loc}")
+        # Mark the current locale with ✓
+        label = f"✓ {_language_label(loc)}" if loc == locale else _language_label(loc)
+        kb.button(text=label, callback_data=f"lang:{loc}")
     kb.adjust(2)
-    await message.answer("Choose your language:", reply_markup=kb.as_markup())
+    await message.answer(
+        _("language.choose", locale=locale),
+        reply_markup=kb.as_markup(),
+    )

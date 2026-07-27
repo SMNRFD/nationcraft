@@ -60,6 +60,20 @@ class ApiClient:
     def get_token(self, telegram_id: int) -> str | None:
         return self._tokens.get(telegram_id)
 
+    # ---- player profile ----
+    async def get_me(self, telegram_id: int) -> dict | None:
+        """Return the current player's profile (locale, role, etc.)."""
+        try:
+            return await self._request("GET", "/auth/me", telegram_id=telegram_id)
+        except NationCraftError:
+            return None
+
+    async def set_locale(self, telegram_id: int, locale: str) -> dict:
+        """Update the player's preferred locale."""
+        return await self._request(
+            "POST", "/auth/locale", telegram_id=telegram_id, json={"locale": locale}
+        )
+
     # ---- worlds & countries ----
     async def list_worlds(self, telegram_id: int) -> list[dict]:
         return await self._request("GET", "/worlds", telegram_id=telegram_id) or []

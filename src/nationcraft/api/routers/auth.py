@@ -4,7 +4,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from nationcraft.api.dependencies import SessionDep
+from nationcraft.api.dependencies import CurrentPlayer, SessionDep
 from nationcraft.api.schemas.envelope import success
 from nationcraft.application.dto.auth import (
     LoginRequest,
@@ -12,6 +12,7 @@ from nationcraft.application.dto.auth import (
     RefreshRequest,
     RegisterRequest,
     TokenResponse,
+    UpdateLocaleRequest,
 )
 from nationcraft.application.services import AuthService
 
@@ -44,3 +45,21 @@ async def logout(req: LogoutRequest, session: SessionDep) -> dict:
     svc = AuthService(session)
     await svc.logout(req)
     return success({"ok": True})
+
+
+@router.get("/me", response_model=None)
+async def get_me(session: SessionDep, player_id: CurrentPlayer) -> dict:
+    """Return the current player's state (locale, role, etc.)."""
+    svc = AuthService(session)
+    player = await svc.get_player(player_id)
+    return success(player.model_dump(mode="json"))
+
+
+@router.post("/locale", response_model=None)
+async def update_locale(
+    req: UpdateLocaleRequest, session: SessionDep, player_id: CurrentPlayer
+) -> dict:
+    """Update the current player's preferred locale."""
+    svc = AuthService(session)
+    player = await svc.set_locale(player_id, req.locale)
+    return success(player.model_dump(mode="json"))

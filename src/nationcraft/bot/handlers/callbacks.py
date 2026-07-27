@@ -13,10 +13,38 @@ from nationcraft.bot.keyboards import (
     paginated_keyboard,
 )
 from nationcraft.core.exceptions import NationCraftError
-from nationcraft.core.logging import get_logger
 from nationcraft.core.i18n import _
+from nationcraft.core.logging import get_logger
 
 log = get_logger(__name__)
+
+
+async def _safe_api_call(cb: CallbackQuery, locale: str, coro):
+    """Run an API call; on connection error, show a friendly message.
+
+    Returns the result on success, or ``None`` on failure (after
+    showing an error to the user).
+    """
+    try:
+        return await coro
+    except NationCraftError as exc:
+        await cb.message.edit_text(
+            _("errors.error_with_message", locale=locale, message=str(exc)),
+            reply_markup=main_menu_keyboard(),
+        )
+        await cb.answer()
+        return None
+    except Exception as exc:  # noqa: BLE001
+        # Network errors (httpx.ConnectError, etc.) land here.
+        log.warning("bot.api.connection_error", error=str(exc)[:200])
+        await cb.message.edit_text(
+            _("errors.api_unreachable", locale=locale),
+            reply_markup=main_menu_keyboard(),
+        )
+        await cb.answer()
+        return None
+
+
 router = Router()
 
 
@@ -419,24 +447,58 @@ async def cb_notifications(cb: CallbackQuery) -> None:
 
 # -------------------- settings --------------------
 
+def _language_label(code: str) -> str:
+    return {"en": "🇬🇧 English", "fa": "🇮🇷 فارسی"}.get(code, code)
+
+
 @router.callback_query(F.data == "menu:settings")
-async def cb_settings(cb: CallbackQuery) -> None:
+async def cb_settings(cb: CallbackQuery, locale: str = "en") -> None:
     from nationcraft.core.config import settings as app_settings
+    from nationcraft.core.i18n import _
     kb = InlineKeyboardBuilder()
     for loc in app_settings.supported_locales_list:
-        kb.button(text=loc, callback_data=f"lang:{loc}")
+        label = f"✓ {_language_label(loc)}" if loc == locale else _language_label(loc)
+        kb.button(text=label, callback_data=f"lang:{loc}")
     kb.adjust(2)
     kb.row(back_button())
-    await cb.message.edit_text("⚙ *Settings*", reply_markup=kb.as_markup(), parse_mode="Markdown")
+    await cb.message.edit_text(
+        f"⚙ *{_('menu.settings', locale=locale)}*",
+        reply_markup=kb.as_markup(),
+        parse_mode="Markdown",
+    )
     await cb.answer()
 
 
 @router.callback_query(F.data.startswith("lang:"))
-async def cb_language(cb: CallbackQuery) -> None:
-    locale = cb.data.split(":")[1]
-    # NOTE: real implementation persists locale to backend; this is illustrative.
+async def cb_language(cb: CallbackQuery, locale: str = "en") -> None:
+    """Persist the new locale via the API, then confirm in the new language."""
+    from nationcraft.core.i18n import _
+    new_locale = cb.data.split(":")[1]
+    tid = cb.from_user.id
+
+    # If the user is authenticated, persist the locale to the backend.
+    if api_client.get_token(tid):
+        try:
+            await api_client.set_locale(tid, new_locale)
+        except NationCraftError as exc:
+            await cb.answer(
+                _("errors.error_with_message", locale=locale, message=str(exc)),
+                show_alert=True,
+            )
+            return
+        except Exception:  # noqa: BLE001
+            # Network error — still update locally so the UX feels responsive.
+            pass
+
+    # Invalidate the middleware's locale cache so the new locale is used
+    # immediately on the next message.
+    from nationcraft.bot.app import _auth_middleware
+    if _auth_middleware is not None:
+        _auth_middleware.invalidate_locale(tid)
+
+    # Confirm in the NEW locale.
     await cb.message.edit_text(
-        f"🌐 Language set to *{locale}* (effective on next restart).",
+        f"🌐 *{_('language.set_to', locale=new_locale, language=_language_label(new_locale))}*",
         reply_markup=main_menu_keyboard(),
         parse_mode="Markdown",
     )

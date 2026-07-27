@@ -57,6 +57,8 @@ from __future__ import annotations
 import argparse
 import asyncio
 import logging
+import os
+import re
 import signal
 import sys
 from pathlib import Path
@@ -271,6 +273,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Migrate + seed worlds + load game data, then exit. Does NOT start servers.",
     )
     parser.add_argument(
+        "--local",
+        action="store_true",
+        help="Force local-dev mode: SQLite DB, localhost Redis, localhost API URL. "
+             "Overrides DATABASE_URL, REDIS_URL, and API_BASE_URL.",
+    )
+    parser.add_argument(
         "--log-level",
         default=settings.LOG_LEVEL,
         choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
@@ -283,6 +291,35 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help=f"Log format (default: {settings.LOG_FORMAT}).",
     )
     return parser.parse_args(argv)
+
+
+# Hostnames that only resolve inside a Docker Compose network.
+_DOCKER_HOSTNAMES = {"postgres", "redis", "api", "db"}
+
+
+def _extract_hostname(url: str) -> str | None:
+    """Extract the hostname from a URL like ``redis://redis:6379/0`` or ``postgresql+asyncpg://user:pw@host:5432/db``."""
+    m = re.search(r"@([^:/@]+)", url) or re.search(r"//([^:/@]+)", url)
+    return m.group(1) if m else None
+
+
+def _apply_local_overrides() -> None:
+    """Force local-dev config: SQLite + localhost Redis + localhost API URL."""
+    os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///nationcraft.db"
+    os.environ["REDIS_URL"] = "redis://localhost:6379/0"
+    os.environ["API_BASE_URL"] = "http://localhost:8000"
+    # Reload settings so they pick up the new env values.
+    from nationcraft.core.config import settings as _settings, Settings
+    new = Settings()
+    # Mutate the singleton in place so all callers see the new values.
+    for field in new.model_fields:
+        setattr(_settings, field, getattr(new, field))
+    log.info(
+        "main.config.local_overrides_applied",
+        database_url=_settings.DATABASE_URL,
+        redis_url=_settings.REDIS_URL,
+        api_base_url=_settings.API_BASE_URL,
+    )
 
 
 def _validate_config() -> int:
@@ -303,11 +340,39 @@ def _validate_config() -> int:
             hint="Set SECRET_KEY to a 32-byte random hex string. "
                  "Generate one with: python -c \"import secrets; print(secrets.token_hex(32))\"",
         )
+
+    # Warn about Docker-only hostnames when running locally (not in Docker).
+    in_docker = Path("/.dockerenv").exists() or os.environ.get("KUBERNETES_SERVICE_HOST") is not None
+    if not in_docker:
+        for label, url in [("DATABASE_URL", settings.DATABASE_URL),
+                           ("REDIS_URL", settings.REDIS_URL),
+                           ("API_BASE_URL", settings.API_BASE_URL)]:
+            host = _extract_hostname(url or "")
+            if host and host in _DOCKER_HOSTNAMES:
+                log.error(
+                    "main.config.docker_hostname_outside_docker",
+                    setting=label,
+                    hostname=host,
+                    url=url,
+                    hint=(
+                        f"{label}={url} references the Docker hostname '{host}', "
+                        f"but you're running outside Docker. Either:\n"
+                        f"  1. Run `python main.py --local` to auto-use SQLite + localhost, OR\n"
+                        f"  2. Edit .env to use 'localhost' instead of '{host}', OR\n"
+                        f"  3. Run via `docker-compose up -d --build` to use the Docker network."
+                    ),
+                )
+                return 1
     return 0
 
 
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
+
+    # --local: apply overrides BEFORE configuring logging so the log shows them.
+    if args.local:
+        _apply_local_overrides()
+
     configure_logging(args.log_level, args.log_format)
     log.info(
         "main.start",
@@ -315,6 +380,7 @@ def main(argv: list[str] | None = None) -> int:
         host=args.host,
         port=args.port,
         env=settings.ENV,
+        local=args.local,
     )
 
     # Validate config before doing anything destructive.
