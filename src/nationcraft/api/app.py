@@ -29,6 +29,29 @@ async def lifespan(app: FastAPI):
     configure_logging(settings.LOG_LEVEL, settings.LOG_FORMAT)
     log.info("api.startup", env=settings.ENV)
 
+    # Verify database connectivity up-front so we surface a clear error
+    # instead of letting every endpoint fail with a cryptic connection error.
+    try:
+        from nationcraft.infrastructure.db.session import engine
+        from sqlalchemy import text
+        async with engine.connect() as conn:
+            await conn.execute(text("SELECT 1"))
+        log.info("api.db.ok")
+    except Exception as exc:  # noqa: BLE001
+        log.error("api.db.unavailable", error=str(exc))
+        log.error(
+            "api.db.hint",
+            hint="Did you start postgres? Run `docker-compose up -d` from the project root.",
+        )
+
+    # Verify Redis connectivity (optional — only warn if it fails).
+    try:
+        from nationcraft.infrastructure.cache import cache
+        await cache._redis.ping()
+        log.info("api.redis.ok")
+    except Exception as exc:  # noqa: BLE001
+        log.warning("api.redis.unavailable", error=str(exc))
+
     # Discover & load plugins.
     if settings.PLUGINS_ENABLED:
         from nationcraft.core.plugins import PluginLoader
@@ -100,8 +123,33 @@ def create_app() -> FastAPI:
     app.include_router(admin.router)
 
     @app.get("/health", tags=["meta"])
+    @app.get("/health/live", tags=["meta"])
     async def health() -> dict:
+        """Liveness probe — process is up."""
         return {"ok": True, "status": "ok", "version": "1.0.0"}
+
+    @app.get("/health/ready", tags=["meta"])
+    async def readiness() -> dict:
+        """Readiness probe — DB + Redis reachable and ready to serve."""
+        checks: dict[str, str] = {}
+        # DB
+        try:
+            from nationcraft.infrastructure.db.session import engine
+            from sqlalchemy import text
+            async with engine.connect() as conn:
+                await conn.execute(text("SELECT 1"))
+            checks["db"] = "ok"
+        except Exception as exc:  # noqa: BLE001
+            checks["db"] = f"error: {exc}"
+        # Redis
+        try:
+            from nationcraft.infrastructure.cache import cache
+            await cache._redis.ping()
+            checks["redis"] = "ok"
+        except Exception as exc:  # noqa: BLE001
+            checks["redis"] = f"error: {exc}"
+        ok = all(v == "ok" for v in checks.values())
+        return {"ok": ok, "status": "ok" if ok else "degraded", "checks": checks}
 
     return app
 

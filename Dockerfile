@@ -27,6 +27,10 @@ RUN pip install --upgrade pip && pip install .
 ENV PYTHONPATH=/app/src
 EXPOSE 8000
 
+# Healthcheck: hit the readiness endpoint every 30s.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+    CMD python -c "import urllib.request,sys; urllib.request.urlopen('http://localhost:8000/health/live', timeout=3); sys.exit(0)" || exit 1
+
 ENTRYPOINT ["/usr/bin/tini", "--"]
 
 # Default command runs API (override per service in compose)
