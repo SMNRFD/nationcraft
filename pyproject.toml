@@ -14,8 +14,8 @@ keywords = ["telegram", "game", "strategy", "simulation", "nation", "fastapi", "
 classifiers = [
     "Framework :: FastAPI",
     "Programming Language :: Python :: 3.13",
-    "Topic :: Games/Entertainment :: Strategy",
     "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
+    "Operating System :: OS Independent",
 ]
 dependencies = [
     "fastapi>=0.115",
