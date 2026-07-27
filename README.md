@@ -31,6 +31,8 @@ services, never on infrastructure.
 
 ## Quick start
 
+### Option A — Docker Compose (recommended for production)
+
 ```bash
 # 1. Configure environment.
 cp .env.example .env
@@ -38,6 +40,7 @@ cp .env.example .env
 
 # 2. Launch everything (Postgres, Redis, API, worker, bot).
 make up
+# or: docker-compose up -d --build
 
 # 3. Apply migrations and seed game data.
 docker-compose exec api python -m nationcraft.cli initdb --worlds --data
@@ -45,6 +48,46 @@ docker-compose exec api python -m nationcraft.cli initdb --worlds --data
 
 Visit `http://localhost:8000/docs` for the interactive API docs, and
 message your Telegram bot to start playing.
+
+### Option B — Single-process launcher (great for local dev)
+
+`main.py` runs the API, tick worker, and Telegram bot concurrently in
+**one** process — no Docker, no Postgres, no Redis required for quick
+testing (it falls back to SQLite automatically when `DATABASE_URL`
+points at a SQLite file).
+
+```bash
+# 1. Install the package in editable mode (Python 3.11+ required).
+pip install -e .
+
+# 2. Configure environment.
+cp .env.example .env
+#   - Set SECRET_KEY to a 32-byte random hex string.
+#   - Set TELEGRAM_BOT_TOKEN from @BotFather.
+#   - Set DATABASE_URL to postgres or sqlite+aiosqlite:///nationcraft.db
+#   - Set REDIS_URL (or leave default if no Redis).
+
+# 3. Initialize the database (migrations + seed worlds + load game data).
+python main.py --initdb
+
+# 4. Run the entire game (API + worker + bot) in one process.
+python main.py --log-format console
+```
+
+Other useful invocations:
+
+```bash
+python main.py --only api           # just the FastAPI server
+python main.py --only worker        # just the tick engine
+python main.py --only bot           # just the Telegram bot
+python main.py --migrate            # apply migrations, then start
+python main.py --only api --reload  # dev mode with auto-reload
+python main.py --host 127.0.0.1 --port 9000
+```
+
+When running all components in one process, the API uses a single
+uvicorn worker (no pre-fork). For production with many concurrent
+players, prefer `docker-compose` so the API can scale horizontally.
 
 ## Repository layout
 
@@ -108,7 +151,7 @@ AGPL-3.0-or-later.
 Yasin Aryanfard Contact:
 - Telegram: [@ysnrfd](https://t.me/ysnrfd) & [@ysnrfd3](https://t.me/ysnrfd3)
 - GitHub: [ysnrfd](https://github.com/ysnrfd) & [SMNRFD](https://github.com/SMNRFD)
-- Hugging Face: [ysn-rfd](https://huggingface.co/ysn-rfd)
+- Huggingface: [ysn-rfd](https://huggingface.co/ysn-rfd)
 
 Amir Hossein Contact:
 - Telegram: [@Amir_hosseim](https://t.me/@Amir_hosseim)

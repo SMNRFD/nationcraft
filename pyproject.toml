@@ -7,12 +7,14 @@ name = "nationcraft"
 version = "1.0.0"
 description = "NationCraft — production-quality plugin-driven Telegram nation simulation game"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.11"
 license = { text = "AGPL-3.0-or-later" }
 authors = [{ name = "NationCraft Team" }]
 keywords = ["telegram", "game", "strategy", "simulation", "nation", "fastapi", "aiogram"]
 classifiers = [
     "Framework :: FastAPI",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
     "Operating System :: OS Independent",
@@ -67,7 +69,7 @@ packages = ["src/nationcraft"]
 
 [tool.ruff]
 line-length = 100
-target-version = "py313"
+target-version = "py311"
 src = ["src", "tests"]
 
 [tool.ruff.lint]
@@ -79,7 +81,7 @@ ignore = ["S101", "B008", "N818", "SIM117"]
 "alembic/**" = ["N999"]
 
 [tool.mypy]
-python_version = "3.13"
+python_version = "3.11"
 strict = true
 plugins = ["pydantic.mypy"]
 warn_unused_ignores = true
