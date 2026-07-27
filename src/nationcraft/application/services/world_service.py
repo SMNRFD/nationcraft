@@ -2,8 +2,9 @@
 from __future__ import annotations
 
 import re
+from datetime import datetime, timezone
 
-from sqlalchemy import select, text, update
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from nationcraft.application.dto.game import WorldDTO
@@ -108,7 +109,7 @@ class WorldService:
             .where(WorldModel.id.in_(world_ids))
             .values(
                 tick_count=WorldModel.tick_count + 1,
-                last_tick_at=text("now()"),
+                last_tick_at=datetime.now(timezone.utc),
             )
         )
 

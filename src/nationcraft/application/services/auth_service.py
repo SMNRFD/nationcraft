@@ -187,6 +187,52 @@ class AuthService:
             raise NotFoundError("player not found")
         return self._player_dto(player)
 
+    async def get_by_telegram_id(self, telegram_id: int) -> PlayerModel | None:
+        """Look up a player by Telegram ID. Returns None if not found."""
+        return await self.session.scalar(
+            select(PlayerModel).where(PlayerModel.telegram_id == telegram_id)
+        )
+
+    async def reset_password(
+        self, telegram_id: int, old_password: str, new_password: str
+    ) -> None:
+        """Reset a player's password after verifying the old one."""
+        from sqlalchemy import select
+        player = await self.session.scalar(
+            select(PlayerModel).where(PlayerModel.telegram_id == telegram_id)
+        )
+        if player is None or not player.password_hash:
+            raise AuthenticationError("invalid credentials")
+        # Verify old password.
+        self.hasher.verify(old_password, player.password_hash)
+        # Set new password.
+        player.password_hash = self.hasher.hash(new_password)
+        await self.session.flush()
+        # Revoke all existing sessions (force re-login everywhere).
+        await self.revoke_all_sessions(player.id)
+        await event_bus.publish(Event(
+            type="player.password_reset",
+            player_id=player.id,
+            payload={"telegram_id": telegram_id},
+        ))
+
+    async def promote_to_admin(self, telegram_id: int, role: str = "admin") -> PlayerDTO:
+        """Promote a player to moderator/admin/owner. Only owners can call this."""
+        from sqlalchemy import select
+        player = await self.session.scalar(
+            select(PlayerModel).where(PlayerModel.telegram_id == telegram_id)
+        )
+        if player is None:
+            raise NotFoundError("player not found")
+        if role not in ("moderator", "admin", "owner"):
+            raise ValidationError(
+                f"invalid role '{role}'. Allowed: moderator, admin, owner",
+                code="invalid_role",
+            )
+        player.role = role
+        await self.session.flush()
+        return self._player_dto(player)
+
     async def _save_session(self, player_id: int, refresh_token: str) -> None:
         self.session.add(SessionModel(
             player_id=player_id,

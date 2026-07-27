@@ -18,7 +18,7 @@ log = get_logger(__name__)
 
 
 class AuthMiddleware(BaseMiddleware):
-    """Attaches ``telegram_id``, ``api_token``, and ``locale`` to handler data.
+    """Attaches ``telegram_id``, ``api_token``, ``locale``, and ``is_admin`` to handler data.
 
     The locale is resolved in this priority order:
     1. The player's locale as stored in the database (via ``GET /auth/me``).
@@ -27,6 +27,10 @@ class AuthMiddleware(BaseMiddleware):
 
     The DB lookup is cached per-telegram-id for 5 minutes to avoid
     hitting the API on every message.
+
+    ``is_admin`` is True if the user's Telegram ID is in
+    ``settings.admin_ids`` (a comma-separated list from
+    ``TELEGRAM_ADMIN_IDS`` env var). Multiple admin IDs are supported.
     """
 
     _LOCALE_CACHE_TTL_SECONDS = 300
@@ -49,6 +53,7 @@ class AuthMiddleware(BaseMiddleware):
         data["telegram_id"] = user.id
         data["api_token"] = token
         data["locale"] = await self._resolve_locale(user)
+        data["is_admin"] = user.id in settings.admin_ids
         return await handler(event, data)
 
     async def _resolve_locale(self, user: User) -> str:

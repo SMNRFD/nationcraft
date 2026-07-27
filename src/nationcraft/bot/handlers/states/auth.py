@@ -7,6 +7,9 @@ from aiogram.filters.state import State, StatesGroup
 class AuthStates(StatesGroup):
     waiting_for_password = State()
     waiting_for_new_password = State()
+    # Reset password flow
+    waiting_for_old_password = State()
+    waiting_for_new_password_reset = State()
 
 
 class BuildStates(StatesGroup):

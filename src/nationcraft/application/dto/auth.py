@@ -31,6 +31,17 @@ class UpdateLocaleRequest(BaseModel):
     locale: str = Field(min_length=2, max_length=8)
 
 
+class ResetPasswordRequest(BaseModel):
+    telegram_id: int
+    old_password: str = Field(min_length=8, max_length=128)
+    new_password: str = Field(min_length=8, max_length=128)
+
+
+class PromoteAdminRequest(BaseModel):
+    telegram_id: int
+    role: str = Field(default="admin", pattern=r"^(moderator|admin|owner)$")
+
+
 class PlayerDTO(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int

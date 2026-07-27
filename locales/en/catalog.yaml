@@ -38,15 +38,51 @@ help:
     /play — open the game dashboard
     /cancel — abort current action
     /language — switch language
+    /resetpassword — change your password
+    /panel — user control panel
 
 auth:
   register_prompt: "Please choose a password (min 8 chars). I will hash it with Argon2id."
   register_prompt_short: "Type /register to create an account, or /login if you already have one."
   register_success: "Welcome, {username}! Your access token has been saved.\n\nType /play to choose a country."
+  welcome_message: |
+    🎉 *Welcome to NationCraft!*
+
+    You are now a registered ruler. Here's how to get started:
+
+    1. Type /play to open the main menu
+    2. Tap 🌍 Country to pick your nation
+    3. Build farms, mines, and factories to grow your economy
+    4. Research technologies to unlock new units and buildings
+    5. Train military units and defend your homeland
+    6. Trade resources on the market with other players
+    7. Form alliances and wage war
+
+    Type /help at any time to see all commands.
+    Type /panel to manage your account (language, password, etc.)
+
+    Have fun! 🏰
+  already_registered: "ℹ️ You are already registered. Type /login to sign in, or /panel to manage your account."
+  must_login_first: "⚠️ You must /login first to use this command."
   login_prompt: "Please send your password."
   login_success: "✅ Logged in. Type /play to continue."
   login_failed: "❌ Login failed: {message}"
   password_too_short: "Password too short. Min 8 characters."
+  password_empty: "Password cannot be empty."
+  reset_password_old_prompt: "🔐 Please send your *current* password."
+  reset_password_new_prompt: "🆕 Please send your *new* password (min 8 chars)."
+  password_reset_success: "✅ Password reset successfully! All sessions have been revoked. Please /login again with your new password."
+
+role:
+  player: "Player"
+  moderator: "Moderator"
+  admin: "Admin"
+  owner: "Owner"
+
+panel:
+  title: "User Panel"
+  button_language: "🌐 Change Language"
+  button_reset_password: "🔐 Reset Password"
 
 country:
   selected: "You are now the ruler of {name} {flag}!"

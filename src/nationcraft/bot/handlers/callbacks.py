@@ -451,6 +451,21 @@ def _language_label(code: str) -> str:
     return {"en": "🇬🇧 English", "fa": "🇮🇷 فارسی"}.get(code, code)
 
 
+@router.callback_query(F.data == "panel:reset_password")
+async def cb_panel_reset_password(cb: CallbackQuery, state, locale: str = "en") -> None:
+    """Trigger the /resetpassword flow from the panel button."""
+    from nationcraft.bot.handlers.states.auth import AuthStates
+    from nationcraft.core.i18n import _
+    user = cb.from_user
+    if not api_client.get_token(user.id):
+        await cb.message.answer(_("auth.must_login_first", locale=locale))
+        await cb.answer()
+        return
+    await state.set_state(AuthStates.waiting_for_old_password)
+    await cb.message.answer(_("auth.reset_password_old_prompt", locale=locale))
+    await cb.answer()
+
+
 @router.callback_query(F.data == "menu:settings")
 async def cb_settings(cb: CallbackQuery, locale: str = "en") -> None:
     from nationcraft.core.config import settings as app_settings

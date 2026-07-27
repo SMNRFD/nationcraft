@@ -312,7 +312,9 @@ def _apply_local_overrides() -> None:
     from nationcraft.core.config import settings as _settings, Settings
     new = Settings()
     # Mutate the singleton in place so all callers see the new values.
-    for field in new.model_fields:
+    # Use type(new).model_fields (class attribute) to avoid the
+    # PydanticDeprecatedSince211 warning about instance attribute access.
+    for field in type(new).model_fields:
         setattr(_settings, field, getattr(new, field))
     log.info(
         "main.config.local_overrides_applied",

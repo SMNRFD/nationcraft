@@ -61,3 +61,4 @@ async def run_bot(use_webhook: bool = False) -> None:
             await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
         finally:
             await bot.session.close()
+            await api_client.close()

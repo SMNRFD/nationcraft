@@ -10,11 +10,32 @@ from nationcraft.core.exceptions import NationCraftError, AuthenticationError
 
 
 class ApiClient:
-    """Wraps REST calls to the backend, with auto token handling."""
+    """Wraps REST calls to the backend, with auto token handling.
+
+    Uses a shared ``httpx.AsyncClient`` with a generous timeout (60s)
+    and connection pooling to avoid the ``ReadTimeout`` errors that
+    occur when creating a new client per request.
+    """
 
     def __init__(self, base_url: str | None = None) -> None:
         self.base_url = (base_url or settings.API_BASE_URL).rstrip("/")
         self._tokens: dict[int, str] = {}  # telegram_id -> access_token
+        self._client: httpx.AsyncClient | None = None
+
+    async def _get_client(self) -> httpx.AsyncClient:
+        """Lazily create a shared httpx client with a 60s timeout."""
+        if self._client is None or self._client.is_closed:
+            self._client = httpx.AsyncClient(
+                timeout=httpx.Timeout(60.0, connect=10.0),
+                limits=httpx.Limits(max_connections=20, max_keepalive_connections=10),
+            )
+        return self._client
+
+    async def close(self) -> None:
+        """Close the underlying HTTP client. Call on shutdown."""
+        if self._client is not None and not self._client.is_closed:
+            await self._client.aclose()
+            self._client = None
 
     async def _request(
         self, method: str, path: str, *, telegram_id: int | None = None,
@@ -25,8 +46,21 @@ class ApiClient:
             headers["Authorization"] = f"Bearer {token}"
         elif telegram_id is not None and telegram_id in self._tokens:
             headers["Authorization"] = f"Bearer {self._tokens[telegram_id]}"
-        async with httpx.AsyncClient(timeout=30) as client:
-            resp = await client.request(method, f"{self.base_url}{path}", headers=headers, json=json)
+        client = await self._get_client()
+        try:
+            resp = await client.request(
+                method, f"{self.base_url}{path}", headers=headers, json=json
+            )
+        except httpx.TimeoutException as exc:
+            raise NationCraftError(
+                "request timed out — the server may be overloaded. Please try again.",
+                code="api_timeout", status_code=504,
+            ) from exc
+        except httpx.ConnectError as exc:
+            raise NationCraftError(
+                "cannot reach the game server. Is the API running?",
+                code="api_unreachable", status_code=503,
+            ) from exc
         body: dict[str, Any]
         try:
             body = resp.json()
@@ -72,6 +106,26 @@ class ApiClient:
         """Update the player's preferred locale."""
         return await self._request(
             "POST", "/auth/locale", telegram_id=telegram_id, json={"locale": locale}
+        )
+
+    async def reset_password(
+        self, telegram_id: int, old_password: str, new_password: str
+    ) -> dict:
+        """Reset the player's password. Requires the old password."""
+        return await self._request(
+            "POST", "/auth/reset-password", telegram_id=telegram_id,
+            json={
+                "telegram_id": telegram_id,
+                "old_password": old_password,
+                "new_password": new_password,
+            },
+        )
+
+    async def promote_admin(self, caller_telegram_id: int, target_telegram_id: int, role: str = "admin") -> dict:
+        """Promote a player to admin/owner. Caller must be owner or telegram admin."""
+        return await self._request(
+            "POST", "/auth/promote-admin", telegram_id=caller_telegram_id,
+            json={"telegram_id": target_telegram_id, "role": role},
         )
 
     # ---- worlds & countries ----
