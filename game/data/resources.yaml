@@ -1,0 +1,147 @@
+items:
+  - key: food
+    name: Food
+    category: material
+    icon: 🌾
+    base_price: 5.0
+    description: Feeds your population. Lack of food causes starvation and unrest.
+  - key: water
+    name: Water
+    category: material
+    icon: 💧
+    base_price: 3.0
+    description: Required for population survival.
+  - key: wood
+    name: Wood
+    category: material
+    icon: 🪵
+    base_price: 4.0
+    description: Basic construction material.
+  - key: stone
+    name: Stone
+    category: material
+    icon: 🪨
+    base_price: 6.0
+  - key: iron
+    name: Iron
+    category: material
+    icon: ⛏
+    base_price: 12.0
+  - key: copper
+    name: Copper
+    category: material
+    icon: 🟤
+    base_price: 14.0
+  - key: steel
+    name: Steel
+    category: material
+    icon: ⚙
+    base_price: 30.0
+  - key: coal
+    name: Coal
+    category: material
+    icon: 🪹
+    base_price: 8.0
+  - key: oil
+    name: Oil
+    category: material
+    icon: 🛢
+    base_price: 20.0
+  - key: gas
+    name: Gas
+    category: material
+    icon: 🔥
+    base_price: 18.0
+  - key: uranium
+    name: Uranium
+    category: material
+    icon: ☢
+    base_price: 200.0
+  - key: gold
+    name: Gold
+    category: material
+    icon: 🥇
+    base_price: 100.0
+  - key: silver
+    name: Silver
+    category: material
+    icon: 🥈
+    base_price: 60.0
+  - key: rare_earth
+    name: Rare Earth Metals
+    category: material
+    icon: 💠
+    base_price: 250.0
+  - key: fuel
+    name: Fuel
+    category: material
+    icon: ⛽
+    base_price: 25.0
+  - key: electricity
+    name: Electricity
+    category: material
+    icon: ⚡
+    base_price: 10.0
+  - key: medicine
+    name: Medicine
+    category: material
+    icon: 💊
+    base_price: 40.0
+  - key: weapons
+    name: Weapons
+    category: military
+    icon: 🔫
+    base_price: 50.0
+  - key: electronics
+    name: Electronics
+    category: material
+    icon: 📦
+    base_price: 80.0
+  - key: research_points
+    name: Research Points
+    category: research
+    icon: 🔬
+    tradable: false
+    base_price: 100.0
+  - key: money
+    name: Money
+    category: currency
+    icon: 💵
+    base_price: 1.0
+  - key: influence
+    name: Influence
+    category: currency
+    icon: 🌟
+    tradable: false
+    base_price: 500.0
+  - key: population
+    name: Population
+    category: population
+    icon: 👥
+    tradable: false
+    hidden: true
+    base_price: 0.0
+  - key: workers
+    name: Workers
+    category: population
+    icon: 👷
+    tradable: false
+    base_price: 0.0
+  - key: engineers
+    name: Engineers
+    category: population
+    icon: 🧰
+    tradable: false
+    base_price: 0.0
+  - key: scientists
+    name: Scientists
+    category: population
+    icon: 👨‍🔬
+    tradable: false
+    base_price: 0.0
+  - key: soldiers
+    name: Soldiers
+    category: military
+    icon: 🪖
+    tradable: false
+    base_price: 0.0

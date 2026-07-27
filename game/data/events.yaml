@@ -1,0 +1,78 @@
+items:
+  - key: drought
+    name: Drought
+    category: natural
+    description: A severe drought reduces food and water production.
+    weight: 1.0
+    effects: {food: -5000, water: -5000, approval: -2.0}
+    cooldown_ticks: 100
+  - key: earthquake
+    name: Earthquake
+    category: natural
+    description: A major earthquake damages infrastructure.
+    weight: 0.5
+    effects: {treasury: -100000, stability: -5.0}
+    cooldown_ticks: 200
+  - key: pandemic
+    name: Pandemic
+    category: natural
+    description: A pandemic spreads through the population.
+    weight: 0.2
+    effects: {population: -10000, healthcare: -10.0, approval: -10.0}
+    cooldown_ticks: 1000
+  - key: oil_boom
+    name: Oil Price Boom
+    category: economic
+    description: Global oil prices spike; net oil exporters gain.
+    weight: 0.5
+    effects: {treasury: 500000, money: 200000}
+    cooldown_ticks: 300
+  - key: economic_crisis
+    name: Economic Crisis
+    category: economic
+    description: A regional economic downturn strikes.
+    weight: 0.4
+    effects: {treasury: -300000, money: -100000, approval: -8.0}
+    cooldown_ticks: 500
+  - key: scientific_breakthrough
+    name: Scientific Breakthrough
+    category: economic
+    description: Your researchers make a major discovery.
+    weight: 0.3
+    effects: {research_points: 200}
+    cooldown_ticks: 200
+  - key: harvest_festival
+    name: Harvest Festival
+    category: holiday
+    description: A bountiful harvest boosts morale.
+    weight: 1.0
+    effects: {food: 10000, approval: 5.0}
+    cooldown_ticks: 100
+  - key: political_scandal
+    name: Political Scandal
+    category: political
+    description: A corruption scandal rocks the government.
+    weight: 0.6
+    effects: {corruption: 5.0, approval: -5.0, stability: -3.0}
+    cooldown_ticks: 200
+  - key: foreign_aid
+    name: Foreign Aid Package
+    category: political
+    description: An ally sends emergency aid.
+    weight: 0.4
+    effects: {money: 200000, food: 5000}
+    cooldown_ticks: 300
+  - key: industrial_accident
+    name: Industrial Accident
+    category: random
+    description: An accident at a major factory.
+    weight: 0.7
+    effects: {treasury: -50000, pollution: 5.0}
+    cooldown_ticks: 150
+  - key: immigration_wave
+    name: Immigration Wave
+    category: political
+    description: A wave of immigrants boosts your population.
+    weight: 0.4
+    effects: {population: 50000}
+    cooldown_ticks: 300

@@ -1,0 +1,76 @@
+# Persian (Farsi) catalog — RTL language
+common:
+  welcome: "به NationCraft خوش آمدید، {username}!"
+  back: "بازگشت"
+  cancel: "لغو"
+  confirm: "تأیید"
+  loading: "در حال بارگذاری..."
+  error: "خطا: {message}"
+  success: "موفقیت"
+  pagination:
+    prev: "قبلی"
+    next: "بعدی"
+    page: "صفحه {current}/{total}"
+
+menu:
+  home: "منوی اصلی"
+  country: "کشور"
+  production: "تولید"
+  military: "نظامی"
+  market: "بازار"
+  diplomacy: "دیپلماسی"
+  research: "تحقیق"
+  missions: "مأموریت‌ها"
+  rankings: "رتبه‌بندی"
+  notifications: "اعلان‌ها"
+  settings: "تنظیمات"
+
+auth:
+  register_prompt: "یک رمز عبور انتخاب کنید (حداقل ۸ کاراکتر)."
+  register_success: "خوش آمدید، {username}! حساب شما ساخته شد."
+  login_prompt: "رمز عبور خود را بفرستید."
+  login_success: "ورود با موفقیت انجام شد."
+  login_failed: "ورود ناموفق: {message}"
+  password_too_short: "رمز عبور خیلی کوتاه است. حداقل ۸ کاراکتر."
+
+country:
+  selected: "شما اکنون فرمانروای {name} {flag} هستید!"
+  abandoned: "شما کشور خود را رها کردید."
+  not_selected: "شما هنوز کشوری انتخاب نکرده‌اید."
+  population: "جمعیت: {n}"
+  treasury: "خزانه: {n}"
+  approval: "محبوبیت: {pct}%"
+  stability: "ثبات: {pct}%"
+  available: "کشورهای موجود"
+  none_available: "کشوری در این جهان موجود نیست."
+
+production:
+  built: "ساخت {building} آغاز شد."
+  upgraded: "ساختمان به سطح {level} ارتقا یافت."
+  insufficient_resources: "منابع کافی نیست."
+  no_buildings: "هنوز ساختمانی وجود ندارد."
+
+military:
+  trained: "{count} × {unit} آموزش دید."
+  war_declared: "جنگ علیه #{defender} اعلام شد."
+  attack_won: "پیروزی! امتیاز جنگ +{delta}."
+  attack_lost: "شکست. امتیاز جنگ -{delta}."
+
+market:
+  order_placed: "سفارش ثبت شد: {side} {qty} {resource} @ {price}."
+  order_cancelled: "سفارش لغو شد."
+  no_orders: "سفارش باز وجود ندارد."
+
+mission:
+  completed: "مأموریت کامل شد: {key}"
+  claimed: "مأموریت دریافت شد! پاداش‌ها:\n{rewards}"
+  not_completed: "مأموریت هنوز کامل نشده است."
+
+notification:
+  none: "اعلانی وجود ندارد."
+
+errors:
+  rate_limited: "خیلی سریع! لطفاً کمی صبر کنید."
+  forbidden: "شما اجازه این کار را ندارید."
+  not_found: "یافت نشد."
+  internal: "خطای داخلی. لطفاً بعداً دوباره تلاش کنید."

@@ -1,0 +1,79 @@
+items:
+  # ---- Tutorial ----
+  - key: tut_select_country
+    name: Select a country
+    category: tutorial
+    description: Pick your starting country from the world.
+    objective: {metric: population, op: ">", target: 0}
+    reward: {money: 50000, food: 5000}
+  - key: tut_build_farm
+    name: Build your first farm
+    category: tutorial
+    description: Construct a farm to feed your population.
+    objective: {metric: food, op: ">=", target: 100}
+    reward: {money: 25000, wood: 1000}
+  - key: tut_train_infantry
+    name: Train your first soldiers
+    category: tutorial
+    description: Train 10 infantry at the barracks.
+    objective: {metric: soldiers, op: ">=", target: 10}
+    reward: {money: 30000, weapons: 100}
+
+  # ---- Daily ----
+  - key: daily_food_reserve
+    name: "Daily: Stockpile 100k food"
+    category: daily
+    description: Maintain a food reserve of 100,000.
+    objective: {metric: food, op: ">=", target: 100000}
+    reward: {money: 100000, influence: 50}
+    expires_after_seconds: 86400
+    repeatable: true
+  - key: daily_research
+    name: "Daily: Earn 50 research points"
+    category: daily
+    description: Generate 50 research points.
+    objective: {metric: research_points, op: ">=", target: 50}
+    reward: {money: 50000}
+    expires_after_seconds: 86400
+    repeatable: true
+  - key: daily_military_buildup
+    name: "Daily: Train 100 soldiers"
+    category: daily
+    description: Bolster your army.
+    objective: {metric: soldiers, op: ">=", target: 100}
+    reward: {money: 80000, weapons: 50}
+    expires_after_seconds: 86400
+    repeatable: true
+
+  # ---- Weekly ----
+  - key: weekly_population_growth
+    name: "Weekly: Grow population by 1M"
+    category: weekly
+    description: Encourage population growth.
+    objective: {metric: population, op: ">=", target: 1000000}
+    reward: {money: 500000, influence: 200}
+    expires_after_seconds: 604800
+    repeatable: true
+
+  # ---- Achievements ----
+  - key: ach_millionaire
+    name: Millionaire
+    category: achievement
+    description: Accumulate 1,000,000 money in your treasury.
+    objective: {metric: money, op: ">=", target: 1000000}
+    reward: {influence: 500}
+  - key: ach_tech_pioneer
+    name: Tech Pioneer
+    category: achievement
+    description: Earn 1000 research points total.
+    objective: {metric: research_points, op: ">=", target: 1000}
+    reward: {influence: 500}
+
+  # ---- Seasonal ----
+  - key: seasonal_winter_hoard
+    name: Winter Hoard
+    category: seasonal
+    description: Build up resources for the winter.
+    objective: {metric: food, op: ">=", target: 500000}
+    reward: {money: 1000000, influence: 1000}
+    expires_after_seconds: 2592000

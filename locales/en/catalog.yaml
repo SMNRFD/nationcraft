@@ -1,0 +1,76 @@
+# English catalog
+common:
+  welcome: "Welcome to NationCraft, {username}!"
+  back: "Back"
+  cancel: "Cancel"
+  confirm: "Confirm"
+  loading: "Loading..."
+  error: "Error: {message}"
+  success: "Success"
+  pagination:
+    prev: "Prev"
+    next: "Next"
+    page: "Page {current}/{total}"
+
+menu:
+  home: "Main menu"
+  country: "Country"
+  production: "Production"
+  military: "Military"
+  market: "Market"
+  diplomacy: "Diplomacy"
+  research: "Research"
+  missions: "Missions"
+  rankings: "Rankings"
+  notifications: "Notifications"
+  settings: "Settings"
+
+auth:
+  register_prompt: "Please choose a password (min 8 chars)."
+  register_success: "Welcome, {username}! Your account has been created."
+  login_prompt: "Please send your password."
+  login_success: "Logged in successfully."
+  login_failed: "Login failed: {message}"
+  password_too_short: "Password too short. Min 8 characters."
+
+country:
+  selected: "You are now the ruler of {name} {flag}!"
+  abandoned: "You have abandoned your country."
+  not_selected: "You don't have a country yet."
+  population: "Population: {n}"
+  treasury: "Treasury: {n}"
+  approval: "Approval: {pct}%"
+  stability: "Stability: {pct}%"
+  available: "Available countries"
+  none_available: "No countries available in this world."
+
+production:
+  built: "Construction started for {building}."
+  upgraded: "Building upgraded to level {level}."
+  insufficient_resources: "Insufficient resources."
+  no_buildings: "No buildings yet."
+
+military:
+  trained: "Trained {count} × {unit}."
+  war_declared: "War declared against #{defender}."
+  attack_won: "Victory! War score +{delta}."
+  attack_lost: "Defeat. War score -{delta}."
+
+market:
+  order_placed: "Order placed: {side} {qty} {resource} @ {price}."
+  order_cancelled: "Order cancelled."
+  no_orders: "No open orders."
+
+mission:
+  completed: "Mission completed: {key}"
+  claimed: "Mission claimed! Rewards:\n{rewards}"
+  not_completed: "Mission not completed yet."
+
+notification:
+  none: "No notifications."
+
+errors:
+  rate_limited: "You're doing that too fast. Please wait."
+  forbidden: "You don't have permission for this action."
+  not_found: "Not found."
+  internal: "Internal error. Please try again later."

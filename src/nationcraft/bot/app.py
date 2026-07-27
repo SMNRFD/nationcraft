@@ -1,0 +1,55 @@
+"""aiogram bot application factory & run entrypoint."""
+from __future__ import annotations
+
+import asyncio
+
+from aiogram import Bot, Dispatcher
+from aiogram.client.default import DefaultBotProperties
+from aiogram.enums import ParseMode
+from aiogram.fsm.storage.memory import MemoryStorage
+
+from nationcraft.bot.api_client import api_client
+from nationcraft.bot.handlers.callbacks import router as callbacks_router
+from nationcraft.bot.handlers.commands import router as commands_router
+from nationcraft.bot.middleware.auth import AuthMiddleware, RateLimitMiddleware
+from nationcraft.core.config import settings
+from nationcraft.core.logging import configure_logging, get_logger
+
+log = get_logger(__name__)
+
+
+def build_dispatcher() -> Dispatcher:
+    dp = Dispatcher(storage=MemoryStorage())
+    dp.message.middleware(AuthMiddleware(api_client))
+    dp.callback_query.middleware(AuthMiddleware(api_client))
+    dp.message.middleware(RateLimitMiddleware())
+    dp.callback_query.middleware(RateLimitMiddleware())
+    dp.include_router(commands_router)
+    dp.include_router(callbacks_router)
+    return dp
+
+
+async def run_bot(use_webhook: bool = False) -> None:
+    configure_logging(settings.LOG_LEVEL, settings.LOG_FORMAT)
+    if not settings.TELEGRAM_BOT_TOKEN:
+        raise RuntimeError("TELEGRAM_BOT_TOKEN not set")
+
+    bot = Bot(
+        token=settings.TELEGRAM_BOT_TOKEN,
+        default=DefaultBotProperties(parse_mode=ParseMode.MARKDOWN),
+    )
+    dp = build_dispatcher()
+
+    if use_webhook and settings.TELEGRAM_WEBHOOK_URL:
+        await bot.set_webhook(
+            settings.TELEGRAM_WEBHOOK_URL,
+            secret_token=settings.TELEGRAM_WEBHOOK_SECRET,
+        )
+        log.info("bot.webhook.set", url=settings.TELEGRAM_WEBHOOK_URL)
+    else:
+        me = await bot.get_me()
+        log.info("bot.start", username=me.username, id=me.id)
+        try:
+            await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
+        finally:
+            await bot.session.close()

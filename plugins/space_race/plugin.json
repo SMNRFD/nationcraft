@@ -1,0 +1,15 @@
+{
+  "id": "space_race",
+  "name": "Space Race Plugin",
+  "version": "1.0.0",
+  "api_version": "1.0",
+  "author": "NationCraft Team",
+  "description": "Adds a space-race mini-system: a new resource (plasma), a new building (fusion_reactor), a new tech (fusion_drive), and a tick hook that grants bonus research when a country has a fusion reactor.",
+  "entrypoint": "plugin.py",
+  "permissions": ["tick.phase.production"],
+  "load_order": 50,
+  "enabled_by_default": true,
+  "config_schema": {
+    "bonus_research_per_tick": {"type": "number", "default": 1.0}
+  }
+}

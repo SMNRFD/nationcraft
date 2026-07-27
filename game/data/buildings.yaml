@@ -1,0 +1,223 @@
+items:
+  - key: farm
+    name: Farm
+    category: industry
+    description: Produces food from arable land.
+    max_level: 10
+    base_cost: {money: 1000, wood: 50}
+    cost_growth: 1.4
+    base_build_time: 60
+    production: {food: 50}
+    consumption: {water: 5}
+    workers_required: 10
+    power_consumption: 5
+  - key: water_well
+    name: Water Well
+    category: civic
+    description: Extracts water for population and farms.
+    max_level: 10
+    base_cost: {money: 500, stone: 20}
+    base_build_time: 45
+    production: {water: 30}
+    workers_required: 5
+  - key: lumber_mill
+    name: Lumber Mill
+    category: industry
+    description: Harvests wood from forests.
+    max_level: 10
+    base_cost: {money: 800, wood: 30}
+    base_build_time: 60
+    production: {wood: 40}
+    workers_required: 10
+  - key: coal_mine
+    name: Coal Mine
+    category: industry
+    description: Mines coal for power and steel.
+    max_level: 10
+    base_cost: {money: 2000, wood: 50, stone: 30}
+    base_build_time: 120
+    production: {coal: 30}
+    workers_required: 20
+    power_consumption: 5
+  - key: iron_mine
+    name: Iron Mine
+    category: industry
+    description: Mines iron ore.
+    max_level: 10
+    base_cost: {money: 3000, wood: 60, stone: 40}
+    base_build_time: 180
+    production: {iron: 20}
+    workers_required: 30
+    power_consumption: 10
+  - key: oil_field
+    name: Oil Field
+    category: industry
+    description: Extracts crude oil.
+    max_level: 10
+    base_cost: {money: 8000, iron: 50, steel: 10}
+    base_build_time: 300
+    production: {oil: 25}
+    workers_required: 40
+    power_consumption: 15
+    requires_tech: [petroleum_engineering]
+  - key: gas_plant
+    name: Gas Plant
+    category: industry
+    description: Extracts natural gas.
+    max_level: 10
+    base_cost: {money: 10000, iron: 80}
+    base_build_time: 360
+    production: {gas: 20}
+    workers_required: 30
+    power_consumption: 10
+    requires_tech: [petroleum_engineering]
+  - key: coal_power_plant
+    name: Coal Power Plant
+    category: power
+    description: Burns coal to produce electricity.
+    max_level: 10
+    base_cost: {money: 5000, iron: 50, stone: 100}
+    base_build_time: 240
+    production: {electricity: 200}
+    consumption: {coal: 10, water: 20}
+    workers_required: 25
+  - key: gas_power_plant
+    name: Gas Power Plant
+    category: power
+    description: Burns natural gas.
+    max_level: 10
+    base_cost: {money: 8000, iron: 60, steel: 20}
+    base_build_time: 300
+    production: {electricity: 350}
+    consumption: {gas: 8, water: 15}
+    workers_required: 20
+    requires_tech: [petroleum_engineering]
+  - key: nuclear_power_plant
+    name: Nuclear Power Plant
+    category: power
+    description: Massive clean power from uranium.
+    max_level: 10
+    base_cost: {money: 50000, steel: 200, concrete: 200, uranium: 5}
+    base_build_time: 1800
+    production: {electricity: 2000}
+    consumption: {uranium: 0.5, water: 50}
+    workers_required: 100
+    requires_tech: [nuclear_engineering]
+  - key: steel_mill
+    name: Steel Mill
+    category: industry
+    description: Refines iron into steel.
+    max_level: 10
+    base_cost: {money: 6000, iron: 100, stone: 50}
+    base_build_time: 360
+    production: {steel: 15}
+    consumption: {iron: 30, coal: 20, electricity: 50}
+    workers_required: 50
+    power_consumption: 50
+  - key: weapons_factory
+    name: Weapons Factory
+    category: military
+    description: Produces weapons for your army.
+    max_level: 10
+    base_cost: {money: 12000, steel: 80, electronics: 20}
+    base_build_time: 480
+    production: {weapons: 10}
+    consumption: {steel: 5, electricity: 30}
+    workers_required: 60
+    requires_tech: [ballistics]
+  - key: vehicle_factory
+    name: Vehicle Factory
+    category: military
+    description: Produces tanks and vehicles.
+    max_level: 10
+    base_cost: {money: 20000, steel: 150, electronics: 50}
+    base_build_time: 600
+    production: {vehicles: 5}
+    consumption: {steel: 20, electricity: 80}
+    workers_required: 80
+    requires_tech: [mechanical_engineering]
+  - key: aircraft_factory
+    name: Aircraft Factory
+    category: military
+    description: Builds aircraft.
+    max_level: 10
+    base_cost: {money: 50000, steel: 200, electronics: 100}
+    base_build_time: 900
+    production: {aircraft: 2}
+    consumption: {steel: 30, fuel: 10, electricity: 100}
+    workers_required: 100
+    requires_tech: [aeronautics]
+  - key: shipyard
+    name: Shipyard
+    category: military
+    description: Builds ships.
+    max_level: 10
+    base_cost: {money: 80000, steel: 300, electronics: 100}
+    base_build_time: 1200
+    production: {ships: 1}
+    consumption: {steel: 50, electronics: 10, electricity: 150}
+    workers_required: 150
+    requires_tech: [naval_engineering]
+  - key: research_center
+    name: Research Center
+    category: research
+    description: Generates research points.
+    max_level: 10
+    base_cost: {money: 10000, electronics: 30}
+    base_build_time: 240
+    production: {research_points: 5}
+    workers_required: 20
+    power_consumption: 30
+  - key: warehouse
+    name: Warehouse
+    category: civic
+    description: Increases resource storage.
+    max_level: 10
+    base_cost: {money: 2000, wood: 50, stone: 50}
+    base_build_time: 90
+    storage: {food: 10000, water: 10000, wood: 5000, iron: 5000, steel: 2000}
+    workers_required: 5
+  - key: hospital
+    name: Hospital
+    category: civic
+    description: Improves healthcare.
+    max_level: 10
+    base_cost: {money: 15000, electronics: 20, medicine: 30}
+    base_build_time: 300
+    production: {medicine: 2}
+    workers_required: 50
+    power_consumption: 40
+  - key: school
+    name: School
+    category: civic
+    description: Improves education.
+    max_level: 10
+    base_cost: {money: 8000, wood: 50, electronics: 10}
+    base_build_time: 240
+    workers_required: 30
+    power_consumption: 20
+  - key: barracks
+    name: Barracks
+    category: military
+    description: Trains infantry and police.
+    max_level: 10
+    base_cost: {money: 5000, wood: 100, steel: 20}
+    base_build_time: 180
+    workers_required: 10
+    power_consumption: 15
+  - key: airport
+    name: Airport
+    category: transport
+    description: Required to build aircraft.
+    max_level: 5
+    base_cost: {money: 30000, steel: 100, electronics: 50}
+    base_build_time: 600
+    requires_tech: [aeronautics]
+  - key: port
+    name: Port
+    category: transport
+    description: Required to build ships.
+    max_level: 5
+    base_cost: {money: 20000, steel: 80, wood: 100}
+    base_build_time: 480
+    requires_tech: [naval_engineering]

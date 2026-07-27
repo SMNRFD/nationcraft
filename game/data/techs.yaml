@@ -1,0 +1,171 @@
+items:
+  # ---- Industry ----
+  - key: mechanical_engineering
+    name: Mechanical Engineering
+    branch: industry
+    tier: 1
+    research_cost: {money: 5000, research_points: 100}
+    research_time: 600
+    effects: {production_bonus: 0.05}
+    unlocks_buildings: [vehicle_factory]
+    unlocks_units: [tank]
+  - key: steel_production
+    name: Steel Production
+    branch: industry
+    tier: 1
+    research_cost: {money: 4000, research_points: 80}
+    research_time: 480
+    effects: {steel_efficiency: 0.1}
+  - key: advanced_manufacturing
+    name: Advanced Manufacturing
+    branch: industry
+    tier: 2
+    research_cost: {money: 20000, research_points: 300}
+    research_time: 1800
+    requires: [mechanical_engineering, steel_production]
+    effects: {production_bonus: 0.1}
+  - key: robotics
+    name: Industrial Robotics
+    branch: industry
+    tier: 3
+    research_cost: {money: 100000, research_points: 800, electronics: 50}
+    research_time: 7200
+    requires: [advanced_manufacturing]
+    effects: {production_bonus: 0.2, worker_efficiency: 0.3}
+
+  # ---- Military ----
+  - key: ballistics
+    name: Ballistics
+    branch: military
+    tier: 1
+    research_cost: {money: 6000, research_points: 100}
+    research_time: 600
+    unlocks_buildings: [weapons_factory]
+    unlocks_units: [artillery]
+  - key: advanced_ballistics
+    name: Advanced Ballistics
+    branch: military
+    tier: 2
+    research_cost: {money: 30000, research_points: 250}
+    research_time: 1800
+    requires: [ballistics]
+    unlocks_units: [rocket_artillery]
+  - key: guided_missiles
+    name: Guided Missiles
+    branch: military
+    tier: 3
+    research_cost: {money: 150000, research_points: 600, electronics: 30}
+    research_time: 5400
+    requires: [advanced_ballistics]
+    unlocks_units: [missile, sam, missile_defense]
+  - key: cruise_missiles
+    name: Cruise Missiles
+    branch: military
+    tier: 4
+    research_cost: {money: 500000, research_points: 1500, electronics: 100}
+    research_time: 10800
+    requires: [guided_missiles]
+    unlocks_units: [cruise_missile]
+  - key: special_operations
+    name: Special Operations
+    branch: military
+    tier: 2
+    research_cost: {money: 25000, research_points: 200}
+    research_time: 1500
+    unlocks_units: [special_forces]
+  - key: radar_systems
+    name: Radar Systems
+    branch: military
+    tier: 2
+    research_cost: {money: 20000, research_points: 200, electronics: 10}
+    research_time: 1200
+    unlocks_units: [aa_battery, radar]
+  - key: aeronautics
+    name: Aeronautics
+    branch: military
+    tier: 2
+    research_cost: {money: 50000, research_points: 400, electronics: 20}
+    research_time: 3600
+    unlocks_buildings: [aircraft_factory, airport]
+    unlocks_units: [bomber, fighter, helicopter]
+  - key: naval_engineering
+    name: Naval Engineering
+    branch: military
+    tier: 2
+    research_cost: {money: 60000, research_points: 500, steel: 50}
+    research_time: 3600
+    unlocks_buildings: [shipyard, port]
+    unlocks_units: [destroyer, frigate, submarine]
+  - key: cyber_warfare
+    name: Cyber Warfare
+    branch: military
+    tier: 3
+    research_cost: {money: 80000, research_points: 500, electronics: 100}
+    research_time: 3600
+    unlocks_units: [cyber_unit]
+  - key: ai_warfare
+    name: AI Warfare
+    branch: military
+    tier: 4
+    research_cost: {money: 200000, research_points: 1000, electronics: 200}
+    research_time: 7200
+    requires: [cyber_warfare, robotics]
+    unlocks_units: [drone]
+  - key: nuclear_engineering
+    name: Nuclear Engineering
+    branch: military
+    tier: 4
+    research_cost: {money: 500000, research_points: 2000, uranium: 50}
+    research_time: 14400
+    unlocks_buildings: [nuclear_power_plant]
+    unlocks_units: [icbm]
+
+  # ---- Energy ----
+  - key: petroleum_engineering
+    name: Petroleum Engineering
+    branch: energy
+    tier: 1
+    research_cost: {money: 8000, research_points: 120}
+    research_time: 720
+    unlocks_buildings: [oil_field, gas_plant, gas_power_plant]
+  - key: renewable_energy
+    name: Renewable Energy
+    branch: energy
+    tier: 2
+    research_cost: {money: 30000, research_points: 250}
+    research_time: 1800
+    effects: {electricity_efficiency: 0.15}
+  - key: fusion_power
+    name: Fusion Power
+    branch: energy
+    tier: 5
+    research_cost: {money: 5000000, research_points: 5000, electronics: 500}
+    research_time: 36000
+    requires: [nuclear_engineering, renewable_energy]
+    effects: {electricity_efficiency: 0.5}
+
+  # ---- Space ----
+  - key: space_program
+    name: Space Program
+    branch: space
+    tier: 4
+    research_cost: {money: 1000000, research_points: 3000, electronics: 200, steel: 200}
+    research_time: 18000
+    requires: [aeronautics, advanced_manufacturing]
+    unlocks_units: [satellite]
+
+  # ---- Civic ----
+  - key: medicine_research
+    name: Medical Research
+    branch: civic
+    tier: 1
+    research_cost: {money: 5000, research_points: 80}
+    research_time: 480
+    effects: {healthcare_bonus: 0.1}
+  - key: education_reform
+    name: Education Reform
+    branch: civic
+    tier: 1
+    research_cost: {money: 4000, research_points: 80}
+    research_time: 480
+    effects: {education_bonus: 0.1}

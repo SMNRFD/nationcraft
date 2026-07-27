@@ -1,0 +1,273 @@
+items:
+  - code: IR
+    name: Iran
+    region: middle_east
+    flag_emoji: 🇮🇷
+    starting_population: 85000000
+    starting_treasury: 2000000
+    starting_resources:
+      money: 2000000
+      food: 50000
+      water: 50000
+      oil: 20000
+      gas: 15000
+      iron: 5000
+    starting_buildings:
+      farm: 5
+      water_well: 3
+      oil_field: 2
+      coal_power_plant: 1
+      barracks: 1
+    traits: [oil_rich, mountainous]
+    description: A large Middle Eastern nation with abundant oil and gas reserves.
+  - code: JP
+    name: Japan
+    region: east_asia
+    flag_emoji: 🇯🇵
+    starting_population: 125000000
+    starting_treasury: 5000000
+    starting_resources:
+      money: 5000000
+      food: 40000
+      water: 40000
+      electronics: 5000
+    starting_buildings:
+      farm: 4
+      water_well: 3
+      research_center: 3
+      steel_mill: 1
+      barracks: 1
+    starting_technologies: [advanced_manufacturing]
+    traits: [tech_advanced, island]
+    description: An island nation with a high-tech economy.
+  - code: DE
+    name: Germany
+    region: europe
+    flag_emoji: 🇩🇪
+    starting_population: 83000000
+    starting_treasury: 4500000
+    starting_resources:
+      money: 4500000
+      food: 50000
+      coal: 15000
+      iron: 10000
+      steel: 5000
+    starting_buildings:
+      farm: 4
+      coal_mine: 2
+      steel_mill: 2
+      coal_power_plant: 1
+      barracks: 1
+    starting_technologies: [mechanical_engineering]
+    traits: [industrial]
+    description: A European industrial powerhouse.
+  - code: BR
+    name: Brazil
+    region: south_america
+    flag_emoji: 🇧🇷
+    starting_population: 215000000
+    starting_treasury: 3000000
+    starting_resources:
+      money: 3000000
+      food: 80000
+      water: 80000
+      wood: 30000
+      iron: 8000
+    starting_buildings:
+      farm: 8
+      lumber_mill: 4
+      water_well: 4
+      coal_power_plant: 1
+      barracks: 1
+    traits: [agricultural, large_population]
+    description: A vast South American nation with rich agriculture and resources.
+  - code: US
+    name: United States
+    region: north_america
+    flag_emoji: 🇺🇸
+    starting_population: 330000000
+    starting_treasury: 10000000
+    starting_resources:
+      money: 10000000
+      food: 100000
+      oil: 30000
+      iron: 20000
+      coal: 20000
+    starting_buildings:
+      farm: 6
+      oil_field: 3
+      iron_mine: 2
+      coal_power_plant: 2
+      barracks: 2
+      research_center: 2
+    starting_technologies: [mechanical_engineering, aeronautics]
+    traits: [superpower, large_population]
+    description: A global superpower with vast resources and military.
+  - code: CN
+    name: China
+    region: east_asia
+    flag_emoji: 🇨🇳
+    starting_population: 1400000000
+    starting_treasury: 8000000
+    starting_resources:
+      money: 8000000
+      food: 120000
+      coal: 40000
+      iron: 30000
+      rare_earth: 5000
+    starting_buildings:
+      farm: 10
+      coal_mine: 4
+      iron_mine: 3
+      steel_mill: 3
+      coal_power_plant: 3
+      barracks: 3
+    starting_technologies: [mechanical_engineering, steel_production]
+    traits: [large_population, manufacturing]
+    description: The world's most populous country and manufacturing hub.
+  - code: RU
+    name: Russia
+    region: eurasia
+    flag_emoji: 🇷🇺
+    starting_population: 145000000
+    starting_treasury: 6000000
+    starting_resources:
+      money: 6000000
+      oil: 50000
+      gas: 40000
+      iron: 20000
+      coal: 30000
+    starting_buildings:
+      oil_field: 4
+      gas_plant: 3
+      iron_mine: 2
+      coal_power_plant: 2
+      barracks: 2
+    starting_technologies: [petroleum_engineering]
+    traits: [oil_rich, large_territory]
+    description: The largest country on Earth with massive energy reserves.
+  - code: IN
+    name: India
+    region: south_asia
+    flag_emoji: 🇮🇳
+    starting_population: 1400000000
+    starting_treasury: 4000000
+    starting_resources:
+      money: 4000000
+      food: 90000
+      iron: 15000
+      coal: 25000
+    starting_buildings:
+      farm: 8
+      iron_mine: 2
+      coal_mine: 3
+      coal_power_plant: 2
+      barracks: 2
+    starting_technologies: [mechanical_engineering]
+    traits: [large_population, agricultural]
+    description: A massive South Asian democracy with growing industry.
+  - code: FR
+    name: France
+    region: europe
+    flag_emoji: 🇫🇷
+    starting_population: 67000000
+    starting_treasury: 4500000
+    starting_resources:
+      money: 4500000
+      food: 60000
+      uranium: 500
+    starting_buildings:
+      farm: 5
+      coal_power_plant: 1
+      research_center: 2
+      barracks: 1
+    starting_technologies: [nuclear_engineering]
+    traits: [nuclear_power, agricultural]
+    description: A European leader in nuclear energy and agriculture.
+  - code: GB
+    name: United Kingdom
+    region: europe
+    flag_emoji: 🇬🇧
+    starting_population: 67000000
+    starting_treasury: 4500000
+    starting_resources:
+      money: 4500000
+      food: 40000
+      coal: 10000
+    starting_buildings:
+      farm: 4
+      coal_power_plant: 1
+      shipyard: 1
+      port: 1
+      barracks: 1
+    starting_technologies: [naval_engineering]
+    traits: [island, naval_tradition]
+    description: An island nation with a long naval tradition.
+  - code: TR
+    name: Türkiye
+    region: middle_east
+    flag_emoji: 🇹🇷
+    starting_population: 85000000
+    starting_treasury: 3000000
+    starting_resources:
+      money: 3000000
+      food: 50000
+      coal: 8000
+    starting_buildings:
+      farm: 5
+      coal_power_plant: 1
+      barracks: 2
+    traits: [strategic_location]
+    description: A transcontinental country bridging Europe and Asia.
+  - code: SA
+    name: Saudi Arabia
+    region: middle_east
+    flag_emoji: 🇸🇦
+    starting_population: 35000000
+    starting_treasury: 8000000
+    starting_resources:
+      money: 8000000
+      oil: 80000
+      gas: 30000
+    starting_buildings:
+      oil_field: 6
+      gas_plant: 2
+      barracks: 1
+    starting_technologies: [petroleum_engineering]
+    traits: [oil_rich, desert]
+    description: A desert kingdom with the world's largest oil reserves.
+  - code: AU
+    name: Australia
+    region: oceania
+    flag_emoji: 🇦🇺
+    starting_population: 26000000
+    starting_treasury: 4000000
+    starting_resources:
+      money: 4000000
+      iron: 30000
+      coal: 30000
+      uranium: 1000
+      gold: 500
+    starting_buildings:
+      iron_mine: 3
+      coal_mine: 3
+      coal_power_plant: 1
+    traits: [mineral_rich, island]
+    description: A mineral-rich continent-nation.
+  - code: CA
+    name: Canada
+    region: north_america
+    flag_emoji: 🇨🇦
+    starting_population: 38000000
+    starting_treasury: 4000000
+    starting_resources:
+      money: 4000000
+      oil: 25000
+      wood: 40000
+      uranium: 800
+    starting_buildings:
+      oil_field: 2
+      lumber_mill: 4
+      coal_power_plant: 1
+    traits: [mineral_rich, large_territory]
+    description: A vast northern nation with rich resources.

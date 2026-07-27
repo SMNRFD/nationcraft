@@ -1,0 +1,298 @@
+items:
+  - key: infantry
+    name: Infantry
+    category: land
+    description: Basic foot soldier.
+    attack: 5
+    defense: 8
+    health: 10
+    speed: 1
+    range_km: 0
+    crew: 1
+    cost: {money: 200, weapons: 1, food: 10}
+    build_time: 60
+    maintenance: {money: 1, food: 0.1}
+    requires_building: [barracks]
+  - key: police
+    name: Police
+    category: land
+    description: Internal security; raises stability.
+    attack: 2
+    defense: 5
+    health: 5
+    crew: 1
+    cost: {money: 150, weapons: 0.5}
+    build_time: 30
+    maintenance: {money: 0.5}
+    requires_building: [barracks]
+  - key: special_forces
+    name: Special Forces
+    category: land
+    description: Elite infantry for asymmetric warfare.
+    attack: 15
+    defense: 10
+    health: 15
+    speed: 2
+    crew: 1
+    cost: {money: 1500, weapons: 3, electronics: 1}
+    build_time: 300
+    maintenance: {money: 5, food: 0.2}
+    requires_tech: [special_operations]
+    requires_building: [barracks]
+  - key: tank
+    name: Tank
+    category: land
+    description: Heavy armored vehicle.
+    attack: 30
+    defense: 35
+    health: 50
+    speed: 3
+    crew: 4
+    cost: {money: 8000, steel: 20, weapons: 5, fuel: 50}
+    build_time: 600
+    maintenance: {money: 20, fuel: 0.5}
+    requires_tech: [mechanical_engineering]
+    requires_building: [vehicle_factory]
+  - key: artillery
+    name: Artillery
+    category: land
+    description: Long-range ground fire.
+    attack: 40
+    defense: 10
+    health: 15
+    speed: 1
+    range_km: 30
+    crew: 6
+    cost: {money: 12000, steel: 30, weapons: 8}
+    build_time: 720
+    maintenance: {money: 15, fuel: 0.3}
+    requires_tech: [ballistics]
+    requires_building: [vehicle_factory]
+  - key: rocket_artillery
+    name: Rocket Artillery
+    category: land
+    description: Multi-launch rocket system.
+    attack: 60
+    defense: 8
+    health: 12
+    speed: 2
+    range_km: 80
+    crew: 3
+    cost: {money: 25000, steel: 50, electronics: 5, weapons: 10}
+    build_time: 900
+    maintenance: {money: 25, fuel: 0.5}
+    requires_tech: [advanced_ballistics]
+    requires_building: [vehicle_factory]
+  - key: aa_battery
+    name: Anti-Air Battery
+    category: land
+    description: Defends against air attacks.
+    attack: 10
+    defense: 15
+    health: 20
+    range_km: 20
+    crew: 4
+    cost: {money: 9000, steel: 20, weapons: 4}
+    build_time: 480
+    requires_tech: [radar_systems]
+    requires_building: [vehicle_factory]
+  - key: sam
+    name: SAM System
+    category: land
+    description: Surface-to-air missile.
+    attack: 30
+    defense: 20
+    health: 15
+    range_km: 150
+    crew: 5
+    cost: {money: 30000, steel: 30, electronics: 15, weapons: 8}
+    build_time: 1200
+    requires_tech: [guided_missiles]
+    requires_building: [vehicle_factory]
+  - key: missile
+    name: Short-range Missile
+    category: missile
+    attack: 80
+    defense: 0
+    health: 1
+    range_km: 500
+    crew: 0
+    cost: {money: 50000, steel: 30, weapons: 5, fuel: 20}
+    build_time: 1800
+    requires_tech: [guided_missiles]
+  - key: cruise_missile
+    name: Cruise Missile
+    category: missile
+    attack: 120
+    defense: 0
+    health: 1
+    range_km: 2000
+    crew: 0
+    cost: {money: 200000, steel: 50, electronics: 20, fuel: 50}
+    build_time: 3600
+    requires_tech: [cruise_missiles]
+  - key: icbm
+    name: ICBM
+    category: missile
+    attack: 500
+    defense: 0
+    health: 1
+    range_km: 15000
+    crew: 0
+    cost: {money: 2000000, steel: 200, electronics: 100, uranium: 1, fuel: 200}
+    build_time: 18000
+    requires_tech: [nuclear_engineering]
+  - key: bomber
+    name: Bomber
+    category: air
+    attack: 90
+    defense: 20
+    health: 30
+    speed: 8
+    range_km: 4000
+    crew: 4
+    cost: {money: 200000, steel: 80, electronics: 30, weapons: 10}
+    build_time: 1800
+    maintenance: {money: 100, fuel: 2}
+    requires_tech: [aeronautics]
+    requires_building: [aircraft_factory, airport]
+  - key: fighter
+    name: Fighter Jet
+    category: air
+    attack: 50
+    defense: 40
+    health: 25
+    speed: 12
+    range_km: 2000
+    crew: 1
+    cost: {money: 150000, steel: 50, electronics: 40, weapons: 5}
+    build_time: 1200
+    maintenance: {money: 80, fuel: 1.5}
+    requires_tech: [aeronautics]
+    requires_building: [aircraft_factory, airport]
+  - key: drone
+    name: Combat Drone
+    category: air
+    attack: 35
+    defense: 10
+    health: 5
+    speed: 10
+    range_km: 1500
+    crew: 0
+    cost: {money: 80000, electronics: 50, weapons: 3}
+    build_time: 600
+    maintenance: {money: 30}
+    requires_tech: [ai_warfare]
+    requires_building: [aircraft_factory]
+  - key: helicopter
+    name: Helicopter
+    category: air
+    attack: 25
+    defense: 20
+    health: 20
+    speed: 5
+    range_km: 500
+    crew: 2
+    cost: {money: 60000, steel: 30, electronics: 15, weapons: 4}
+    build_time: 900
+    maintenance: {money: 50, fuel: 1}
+    requires_tech: [aeronautics]
+    requires_building: [aircraft_factory]
+  - key: destroyer
+    name: Destroyer
+    category: naval
+    attack: 70
+    defense: 60
+    health: 100
+    speed: 5
+    range_km: 200
+    crew: 300
+    cost: {money: 500000, steel: 300, electronics: 100, weapons: 30}
+    build_time: 3600
+    maintenance: {money: 200, fuel: 5}
+    requires_tech: [naval_engineering]
+    requires_building: [shipyard, port]
+  - key: frigate
+    name: Frigate
+    category: naval
+    attack: 40
+    defense: 50
+    health: 80
+    speed: 6
+    range_km: 150
+    crew: 200
+    cost: {money: 300000, steel: 200, electronics: 60, weapons: 20}
+    build_time: 2400
+    maintenance: {money: 150, fuel: 4}
+    requires_tech: [naval_engineering]
+    requires_building: [shipyard, port]
+  - key: aircraft_carrier
+    name: Aircraft Carrier
+    category: naval
+    attack: 30
+    defense: 100
+    health: 200
+    speed: 3
+    range_km: 1000
+    crew: 2000
+    cost: {money: 2000000, steel: 1000, electronics: 500, weapons: 50}
+    build_time: 14400
+    maintenance: {money: 1000, fuel: 20}
+    requires_tech: [naval_engineering, aeronautics]
+    requires_building: [shipyard, port]
+  - key: submarine
+    name: Submarine
+    category: naval
+    attack: 100
+    defense: 30
+    health: 60
+    speed: 4
+    range_km: 500
+    crew: 100
+    cost: {money: 800000, steel: 400, electronics: 200, weapons: 20}
+    build_time: 7200
+    maintenance: {money: 400, fuel: 8}
+    requires_tech: [naval_engineering]
+    requires_building: [shipyard, port]
+  - key: cyber_unit
+    name: Cyber Operations Unit
+    category: cyber
+    attack: 20
+    defense: 10
+    health: 5
+    crew: 0
+    cost: {money: 100000, electronics: 50}
+    build_time: 1200
+    requires_tech: [cyber_warfare]
+  - key: satellite
+    name: Satellite
+    category: space
+    attack: 5
+    defense: 5
+    health: 1
+    crew: 0
+    cost: {money: 500000, electronics: 200, fuel: 100}
+    build_time: 7200
+    requires_tech: [space_program]
+  - key: radar
+    name: Radar Station
+    category: land
+    attack: 0
+    defense: 10
+    health: 10
+    range_km: 300
+    crew: 10
+    cost: {money: 50000, electronics: 20}
+    build_time: 600
+    requires_tech: [radar_systems]
+  - key: missile_defense
+    name: Missile Defense System
+    category: land
+    attack: 0
+    defense: 50
+    health: 30
+    range_km: 1000
+    crew: 20
+    cost: {money: 500000, electronics: 100, weapons: 20}
+    build_time: 1800
+    requires_tech: [guided_missiles, radar_systems]
