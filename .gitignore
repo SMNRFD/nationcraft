@@ -59,3 +59,7 @@ Thumbs.db
 # Instruction
 bugs.txt
 prompt.txt
+
+# Database
+nationcraft.db-shm
+nationcraft.db-wal
