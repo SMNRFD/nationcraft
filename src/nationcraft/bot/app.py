@@ -3,7 +3,9 @@ from __future__ import annotations
 
 import asyncio
 from contextlib import suppress
+from typing import TYPE_CHECKING
 
+import aiohttp
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
@@ -17,6 +19,9 @@ from nationcraft.bot.handlers.commands import router as commands_router
 from nationcraft.bot.middleware.auth import AuthMiddleware, RateLimitMiddleware
 from nationcraft.core.config import settings
 from nationcraft.core.logging import configure_logging, get_logger
+
+if TYPE_CHECKING:
+    pass
 
 log = get_logger(__name__)
 
@@ -77,7 +82,7 @@ def build_dispatcher() -> Dispatcher:
     return dp
 
 
-def _build_aiohttp_session() -> "aiohttp.ClientSession":
+def _build_aiohttp_session() -> aiohttp.ClientSession:
     """Build an aiohttp session with proxy support and resilient timeouts.
 
     For users in regions where api.telegram.org is blocked or throttled
@@ -85,8 +90,6 @@ def _build_aiohttp_session() -> "aiohttp.ClientSession":
       TELEGRAM_PROXY=socks5://127.0.0.1:1080
       TELEGRAM_PROXY=http://127.0.0.1:8080
     """
-    import aiohttp
-
     # Total timeout: 30s connect, 60s total (Telegram can be slow on
     # poor networks — the default 5s was too short and caused WinError
     # 10054 on every long-poll cycle).

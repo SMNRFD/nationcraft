@@ -8,6 +8,14 @@ from typing import Any
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+# Resolve the .env path relative to the project root (the directory that
+# contains ``main.py``, ``pyproject.toml``, ``game/``, etc.). Without this,
+# pydantic-settings v2 may walk up the directory tree and pick up an
+# unrelated ``.env`` file from a parent directory (e.g. when the app is
+# run from a different CWD or inside a larger monorepo).
+_PROJECT_ROOT = Path(__file__).resolve().parents[4]  # src/nationcraft/core/config → root
+_ENV_FILE = _PROJECT_ROOT / ".env"
+
 
 class Settings(BaseSettings):
     """Strongly-typed application settings.
@@ -18,7 +26,7 @@ class Settings(BaseSettings):
     """
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=str(_ENV_FILE),
         env_file_encoding="utf-8",
         case_sensitive=True,
         extra="ignore",

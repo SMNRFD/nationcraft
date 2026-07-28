@@ -47,12 +47,17 @@ async def lifespan(app: FastAPI):
 
     # Verify Redis connectivity (optional — only warn if it fails).
     # Bounded by the socket_connect_timeout=2s configured in the cache.
-    try:
-        from nationcraft.infrastructure.cache import cache
-        await asyncio.wait_for(cache._redis.ping(), timeout=3.0)
-        log.info("api.redis.ok")
-    except Exception as exc:  # noqa: BLE001
-        log.warning("api.redis.unavailable", error=str(exc))
+    # If REDIS_URL is empty/unset (e.g. --local mode), skip silently —
+    # the InMemoryRateLimiter will be used instead.
+    from nationcraft.infrastructure.cache import cache
+    if not cache.enabled:
+        log.info("api.redis.skipped", reason="REDIS_URL not set (in-memory fallback)")
+    else:
+        try:
+            await asyncio.wait_for(cache._redis.ping(), timeout=3.0)
+            log.info("api.redis.ok")
+        except Exception as exc:  # noqa: BLE001
+            log.warning("api.redis.unavailable", error=str(exc))
 
     # Discover & load plugins.
     if settings.PLUGINS_ENABLED:
@@ -143,14 +148,19 @@ def create_app() -> FastAPI:
             checks["db"] = "ok"
         except Exception as exc:  # noqa: BLE001
             checks["db"] = f"error: {exc}"
-        # Redis
-        try:
-            from nationcraft.infrastructure.cache import cache
-            await asyncio.wait_for(cache._redis.ping(), timeout=3.0)
-            checks["redis"] = "ok"
-        except Exception as exc:  # noqa: BLE001
-            checks["redis"] = f"error: {exc}"
-        ok = all(v == "ok" for v in checks.values())
+        # Redis (optional — if REDIS_URL is unset, we skip and rate
+        # limiting falls back to in-memory. This is fine for local dev.)
+        from nationcraft.infrastructure.cache import cache
+        if not cache.enabled:
+            checks["redis"] = "skipped (in-memory fallback)"
+        else:
+            try:
+                await asyncio.wait_for(cache._redis.ping(), timeout=3.0)
+                checks["redis"] = "ok"
+            except Exception as exc:  # noqa: BLE001
+                checks["redis"] = f"error: {exc}"
+        # Readiness considers only DB (Redis is optional).
+        ok = checks.get("db") == "ok"
         return {"ok": ok, "status": "ok" if ok else "degraded", "checks": checks}
 
     return app

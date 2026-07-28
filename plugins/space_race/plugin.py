@@ -110,8 +110,12 @@ def register(ctx: Any) -> None:
                 else:
                     rs.amount += bonus
             await s.commit()
-        log.info("space_race.tick.bonus",
-                 world_id=ctx_tick.world_id, reactors=len(reactors), bonus=bonus)
+        # Only log when there's at least one reactor — otherwise this fires
+        # every tick (60s) for every world and clutters the log with
+        # "reactors=0" lines that carry no information.
+        if reactors:
+            log.info("space_race.tick.bonus",
+                     world_id=ctx_tick.world_id, reactors=len(reactors), bonus=bonus)
 
     ctx.api.on_hook("tick.phase.production", production_phase_hook,
                     priority=HookPriority.LOW)

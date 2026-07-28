@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from nationcraft.application.dto.auth import (
     LoginRequest,
+    LogoutRequest,
     PlayerDTO,
     RefreshRequest,
     RegisterRequest,

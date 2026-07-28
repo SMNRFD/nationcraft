@@ -7,6 +7,7 @@ from nationcraft.api.dependencies import CurrentPlayer, SessionDep
 from nationcraft.api.schemas.envelope import success
 from nationcraft.application.dto.game import AttackRequest, DeclareWarRequest, TrainRequest
 from nationcraft.application.services import MilitaryService, WarService
+from nationcraft.core.config import game_data
 from nationcraft.infrastructure.db.models import PlayerModel
 
 router = APIRouter(prefix="/military", tags=["military"])
@@ -26,6 +27,34 @@ async def list_units(session: SessionDep, player_id: CurrentPlayer) -> dict:
     svc = MilitaryService(session)
     units = await svc.list_units(cid)
     return success(units)
+
+
+@router.get("/units/catalog", response_model=None)
+async def units_catalog(player_id: CurrentPlayer) -> dict:
+    """Return the static catalog of all trainable units.
+
+    Each entry includes the unit's attack, defense, cost, required tech,
+    and required buildings. The client uses this to render the train
+    menu without having to hard-code the catalog.
+    """
+    items = []
+    for key, u in sorted(game_data.units.items()):
+        items.append({
+            "key": u.key,
+            "name": u.name,
+            "category": u.category,
+            "description": u.description,
+            "attack": u.attack,
+            "defense": u.defense,
+            "health": u.health,
+            "speed": u.speed,
+            "cost": u.cost,
+            "build_time": u.build_time,
+            "maintenance": u.maintenance,
+            "requires_tech": u.requires_tech,
+            "requires_building": u.requires_building,
+        })
+    return success(items)
 
 
 @router.post("/train", response_model=None)

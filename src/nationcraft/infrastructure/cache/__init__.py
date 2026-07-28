@@ -21,17 +21,32 @@ class RedisCache:
 
     All operations are bounded by ``socket_connect_timeout=2.0`` and
     ``socket_timeout=2.0`` so a hung Redis cannot stall the event loop.
+
+    If ``REDIS_URL`` is empty/unset, ``enabled`` is False and all
+    operations become no-ops — callers (rate limiter, etc.) should check
+    ``enabled`` and fall back to an in-memory implementation.
     """
 
     def __init__(self, url: str | None = None) -> None:
-        self._redis = aioredis.from_url(
-            url or settings.REDIS_URL,
-            decode_responses=True,
-            socket_connect_timeout=2.0,
-            socket_timeout=2.0,
-            retry_on_timeout=True,
-            retry_on_error=[RedisConnectionError, RedisTimeoutError],
-        )
+        # Treat empty string and None the same way — fall back to settings,
+        # which itself may be empty (e.g. --local mode).
+        if url is None:
+            url = settings.REDIS_URL
+        self._url = url or ""
+        self.enabled = bool(self._url)
+        if self.enabled:
+            self._redis = aioredis.from_url(
+                self._url,
+                decode_responses=True,
+                socket_connect_timeout=2.0,
+                socket_timeout=2.0,
+                retry_on_timeout=True,
+                retry_on_error=[RedisConnectionError, RedisTimeoutError],
+            )
+        else:
+            # No Redis configured — sentinel that will raise on use,
+            # forcing callers to check ``enabled`` first.
+            self._redis = None
 
     async def get(self, key: str) -> Any | None:
         raw = await self._redis.get(key)

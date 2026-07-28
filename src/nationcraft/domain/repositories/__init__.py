@@ -24,6 +24,7 @@ from nationcraft.domain.entities import (
     War,
     World,
 )
+from nationcraft.domain.enums import MarketOrderSide
 
 
 @runtime_checkable

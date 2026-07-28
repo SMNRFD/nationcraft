@@ -36,10 +36,13 @@ SessionDep = Annotated[AsyncSession, Depends(get_session)]
 def get_rate_limiter() -> RateLimiter:
     global _limiter
     if _limiter is None:
-        try:
-            from nationcraft.infrastructure.cache import cache
-            _limiter = RedisRateLimiter(cache._redis)
-        except Exception:  # noqa: BLE001
+        from nationcraft.infrastructure.cache import cache
+        if cache.enabled:
+            try:
+                _limiter = RedisRateLimiter(cache._redis)
+            except Exception:  # noqa: BLE001
+                _limiter = InMemoryRateLimiter()
+        else:
             _limiter = InMemoryRateLimiter()
     return _limiter
 

@@ -97,7 +97,7 @@ items:
     category: power
     description: Massive clean power from uranium.
     max_level: 10
-    base_cost: {money: 50000, steel: 200, concrete: 200, uranium: 5}
+    base_cost: {money: 50000, steel: 200, stone: 500, uranium: 5}
     base_build_time: 1800
     production: {electricity: 2000}
     consumption: {uranium: 0.5, water: 50}
@@ -113,6 +113,49 @@ items:
     production: {steel: 15}
     consumption: {iron: 30, coal: 20, electricity: 50}
     workers_required: 50
+    power_consumption: 50
+  - key: quarry
+    name: Quarry
+    category: industry
+    description: Mines stone for construction.
+    max_level: 10
+    base_cost: {money: 1500, wood: 40}
+    base_build_time: 90
+    production: {stone: 20}
+    workers_required: 15
+    power_consumption: 5
+  - key: electronics_factory
+    name: Electronics Factory
+    category: industry
+    description: Produces electronics from steel and electricity. Required to unlock the tech tree (research centers need electronics).
+    max_level: 10
+    base_cost: {money: 20000, steel: 100}
+    base_build_time: 480
+    production: {electronics: 3}
+    consumption: {steel: 5, electricity: 80}
+    workers_required: 50
+    power_consumption: 30
+  - key: oil_refinery
+    name: Oil Refinery
+    category: industry
+    description: Refines crude oil into fuel for vehicles and aircraft.
+    max_level: 10
+    base_cost: {money: 15000, steel: 80}
+    base_build_time: 360
+    production: {fuel: 15}
+    consumption: {oil: 10, electricity: 50}
+    workers_required: 40
+    power_consumption: 20
+  - key: uranium_mine
+    name: Uranium Mine
+    category: industry
+    description: Extracts uranium ore for nuclear power and weapons.
+    max_level: 5
+    base_cost: {money: 30000, steel: 150}
+    base_build_time: 600
+    production: {uranium: 0.3}
+    consumption: {electricity: 100, water: 30}
+    workers_required: 80
     power_consumption: 50
   - key: weapons_factory
     name: Weapons Factory

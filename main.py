@@ -94,6 +94,34 @@ log = get_logger(__name__)
 
 
 # ---------------------------------------------------------------------------
+# Module-level handle to the running uvicorn server, so the shutdown
+# orchestrator can request a graceful exit via ``server.should_exit = True``
+# instead of cancelling the task abruptly. Set by ``run_api``.
+# ---------------------------------------------------------------------------
+_api_server: "uvicorn.Server | None" = None  # type: ignore[name-defined]
+
+
+def _set_api_server(server: object) -> None:
+    """Store the running uvicorn server so run_all can shut it down gracefully."""
+    global _api_server
+    _api_server = server  # type: ignore[assignment]
+
+
+# ---------------------------------------------------------------------------
+# Module-level handle to the running TickRunner, so the shutdown orchestrator
+# can request a graceful stop via ``runner.stop()`` instead of cancelling the
+# task (which would interrupt a tick mid-flight). Set by ``run_worker``.
+# ---------------------------------------------------------------------------
+_tick_runner: "TickRunner | None" = None  # type: ignore[name-defined]
+
+
+def _set_tick_runner(runner: object) -> None:
+    """Store the running TickRunner so run_all can stop it gracefully."""
+    global _tick_runner
+    _tick_runner = runner  # type: ignore[assignment]
+
+
+# ---------------------------------------------------------------------------
 # Database helpers
 # ---------------------------------------------------------------------------
 
@@ -166,7 +194,20 @@ async def initdb(load_data: bool = True) -> None:
 # ---------------------------------------------------------------------------
 
 async def run_api(host: str, port: int, reload: bool = False) -> None:
-    """Run the FastAPI app via :class:`uvicorn.Server` (non-blocking)."""
+    """Run the FastAPI app via :class:`uvicorn.Server` (non-blocking).
+
+    The server is stored on the module-level ``_api_server`` global so that
+    ``run_all`` can request a graceful shutdown via ``server.should_exit = True``
+    rather than cancelling the task abruptly. Cancelling the task mid-lifespan
+    causes uvicorn/starlette to print an ``asyncio.CancelledError`` traceback
+    at shutdown — using ``should_exit`` lets uvicorn close its lifespan queues
+    cleanly and exit silently.
+
+    We also disable uvicorn's own signal handlers (``install_signal_handlers
+    = lambda: None``) because ``run_all`` installs its own SIGINT/SIGTERM
+    handlers that coordinate shutdown across API + worker + bot. Without
+    this, uvicorn's handlers race with ours and produce spurious tracebacks.
+    """
     import uvicorn
 
     config = uvicorn.Config(
@@ -180,7 +221,13 @@ async def run_api(host: str, port: int, reload: bool = False) -> None:
         access_log=False,  # we have our own RequestIdMiddleware
     )
     server = uvicorn.Server(config)
+    server.install_signal_handlers = lambda: None
+    _set_api_server(server)
     log.info("api.starting", host=host, port=port, reload=reload)
+    # If the task is cancelled (only happens after the 10s grace period in
+    # run_all), let the CancelledError propagate — run_all swallows it via
+    # gather(return_exceptions=True). The graceful path (should_exit=True)
+    # lets server.serve() return normally without any cancellation.
     await server.serve()
 
 
@@ -215,6 +262,7 @@ async def run_worker() -> None:
     register_default_handlers()
     log.info("worker.starting", interval=settings.TICK_INTERVAL_SECONDS)
     runner = TickRunner()
+    _set_tick_runner(runner)
     await runner.run()
 
 
@@ -233,7 +281,18 @@ async def run_bot(use_webhook: bool = False) -> None:
 # ---------------------------------------------------------------------------
 
 async def run_all(host: str, port: int, use_webhook: bool = False) -> None:
-    """Run API + worker + bot concurrently in one event loop."""
+    """Run API + worker + bot concurrently in one event loop.
+
+    Shutdown protocol (graceful, no CancelledError tracebacks):
+      1. SIGINT/SIGTERM fires → ``stop_event`` is set.
+      2. We ask the uvicorn server to exit cleanly via ``server.should_exit = True``.
+      3. We ask the tick runner to stop via its ``stop_event`` (if running).
+      4. We wait up to 10 seconds for all tasks to finish on their own.
+      5. If any task is still pending after the grace period, we cancel it
+         and swallow the resulting ``CancelledError`` — this prevents the
+         ugly ``asyncio.CancelledError`` traceback that uvicorn's lifespan
+         handler prints when cancelled mid-await.
+    """
     tasks: list[asyncio.Task] = [
         asyncio.create_task(run_api(host, port), name="api"),
         asyncio.create_task(run_worker(), name="worker"),
@@ -271,15 +330,36 @@ async def run_all(host: str, port: int, use_webhook: bool = False) -> None:
         if t is watcher:
             continue
         exc = t.exception()
-        if exc:
+        if exc and not isinstance(exc, asyncio.CancelledError):
             log.error("main.task.exited", name=t.get_name(), error=str(exc))
-        else:
+        elif not exc:
             log.warning("main.task.exited", name=t.get_name())
 
-    # Cancel everything still running.
-    for t in pending:
-        t.cancel()
-    await asyncio.gather(*pending, return_exceptions=True)
+    # ---- Graceful shutdown phase ----
+    # 1. Ask the uvicorn server to exit cleanly (lets it close lifespan).
+    if _api_server is not None:
+        _api_server.should_exit = True
+
+    # 2. Ask the tick runner to stop after the current tick completes.
+    if _tick_runner is not None:
+        _tick_runner.stop()
+
+    # 3. Give pending tasks up to 10 seconds to finish on their own.
+    if pending:
+        log.info("main.shutdown.grace_period", seconds=10)
+        try:
+            await asyncio.wait_for(
+                asyncio.gather(*pending, return_exceptions=True),
+                timeout=10.0,
+            )
+        except asyncio.TimeoutError:
+            # 4. Force-cancel anything still alive after the grace period.
+            log.warning("main.shutdown.force_cancel", pending=[t.get_name() for t in pending])
+            for t in pending:
+                if not t.done():
+                    t.cancel()
+            await asyncio.gather(*pending, return_exceptions=True)
+
     log.info("main.stopped")
 
 
@@ -339,9 +419,19 @@ def _extract_hostname(url: str) -> str | None:
 
 
 def _apply_local_overrides() -> None:
-    """Force local-dev config: SQLite + localhost Redis + localhost API URL."""
+    """Force local-dev config: SQLite + localhost Redis + localhost API URL.
+
+    In ``--local`` mode we also clear ``REDIS_URL`` so the API falls back
+    silently to in-memory rate limiting instead of logging a warning every
+    startup about Redis being unavailable. Set ``REDIS_URL`` explicitly in
+    ``.env`` (after running ``redis-server``) if you want real Redis during
+    local development.
+    """
     os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///nationcraft.db"
-    os.environ["REDIS_URL"] = "redis://localhost:6379/0"
+    # Clear REDIS_URL so local dev doesn't try to connect to a Redis that
+    # almost certainly isn't running. The API will use InMemoryRateLimiter
+    # instead, which is fine for single-process local dev.
+    os.environ["REDIS_URL"] = ""
     os.environ["API_BASE_URL"] = "http://localhost:8000"
     # Reload settings so they pick up the new env values.
     from nationcraft.core.config import settings as _settings, Settings
@@ -354,7 +444,7 @@ def _apply_local_overrides() -> None:
     log.info(
         "main.config.local_overrides_applied",
         database_url=_settings.DATABASE_URL,
-        redis_url=_settings.REDIS_URL,
+        redis_url=_settings.REDIS_URL or "(in-memory fallback)",
         api_base_url=_settings.API_BASE_URL,
     )
 
