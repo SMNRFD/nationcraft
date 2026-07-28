@@ -85,6 +85,10 @@ async def cmd_register(message: Message, state: FSMContext, locale: str = "en") 
     await state.clear()
     user = message.from_user
     # If we already have a token for this user, they're registered.
+    # NOTE: we don't reach into the API to verify the token here — that
+    # would block the handler chain on a slow API. The token will be
+    # validated on the next authenticated call (and transparently
+    # refreshed if needed).
     if api_client.get_token(user.id):
         await message.answer(
             _("auth.already_registered", locale=locale),
@@ -97,9 +101,39 @@ async def cmd_register(message: Message, state: FSMContext, locale: str = "en") 
 
 @router.message(Command("login"))
 async def cmd_login(message: Message, state: FSMContext, locale: str = "en") -> None:
+    """Start the login flow.
+
+    Evicts any stale local token BEFORE entering the FSM state. This
+    prevents the locale middleware from attempting to call /auth/me with
+    a dead token (which previously caused a 15s hang on the next message
+    when the API was slow to reject the token).
+    """
     await state.clear()
+    user = message.from_user
+    # Drop any existing token — the user explicitly asked to log in again.
+    api_client.clear_token(user.id)
     await state.set_state(AuthStates.waiting_for_password)
     await message.answer(_("auth.login_prompt", locale=locale))
+
+
+@router.message(Command("logout"))
+async def cmd_logout(message: Message, state: FSMContext, locale: str = "en") -> None:
+    """Log the user out — revoke the server-side session and clear local tokens."""
+    await state.clear()
+    user = message.from_user
+    if not api_client.get_token(user.id):
+        await message.answer(_("auth.must_login_first", locale=locale))
+        return
+    # Best-effort server-side revoke; clear local state regardless.
+    try:
+        await api_client.logout(user.id)
+    except Exception as exc:  # noqa: BLE001
+        log.debug("bot.logout.api_failed", error=str(exc)[:100])
+    api_client.clear_token(user.id)
+    await message.answer(
+        _("common.cancel", locale=locale),
+        reply_markup=main_menu_keyboard(),
+    )
 
 
 @router.message(Command("language"))
@@ -148,6 +182,17 @@ async def cmd_panel(message: Message, state: FSMContext, locale: str = "en") -> 
         return
     except Exception:  # noqa: BLE001
         await message.answer(_("errors.api_unreachable", locale=locale))
+        return
+
+    # ``get_me`` swallows auth/network errors and returns None — handle that
+    # explicitly to avoid an AttributeError on ``player.get(...)`` below.
+    if not player:
+        # The token exists locally but the API rejected it (probably
+        # expired). Drop it so the next /panel attempt shows the friendly
+        # "must /login first" prompt and the middleware stops sending
+        # a dead token.
+        api_client.clear_token(user.id)
+        await message.answer(_("auth.must_login_first", locale=locale))
         return
 
     role_label = {
@@ -311,7 +356,9 @@ async def process_new_password(message: Message, state: FSMContext, locale: str 
         )
         return
     await state.clear()
-    api_client._tokens.pop(user.id, None)
+    # The server has revoked all sessions for this player. Drop both the
+    # access token AND the refresh token locally — the user must /login again.
+    api_client.clear_token(user.id)
     await message.answer(
         _("auth.password_reset_success", locale=locale),
         reply_markup=main_menu_keyboard(),

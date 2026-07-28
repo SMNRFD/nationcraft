@@ -1,6 +1,7 @@
 """FastAPI application factory."""
 from __future__ import annotations
 
+import asyncio
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
@@ -45,9 +46,10 @@ async def lifespan(app: FastAPI):
         )
 
     # Verify Redis connectivity (optional — only warn if it fails).
+    # Bounded by the socket_connect_timeout=2s configured in the cache.
     try:
         from nationcraft.infrastructure.cache import cache
-        await cache._redis.ping()
+        await asyncio.wait_for(cache._redis.ping(), timeout=3.0)
         log.info("api.redis.ok")
     except Exception as exc:  # noqa: BLE001
         log.warning("api.redis.unavailable", error=str(exc))
@@ -144,7 +146,7 @@ def create_app() -> FastAPI:
         # Redis
         try:
             from nationcraft.infrastructure.cache import cache
-            await cache._redis.ping()
+            await asyncio.wait_for(cache._redis.ping(), timeout=3.0)
             checks["redis"] = "ok"
         except Exception as exc:  # noqa: BLE001
             checks["redis"] = f"error: {exc}"

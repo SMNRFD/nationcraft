@@ -81,8 +81,22 @@ class EventBus:
     ) -> Callable[[], None]:
         """Register a handler. ``event_type=None`` means wildcard.
 
+        Idempotent on (event_type, handler): subscribing the same callable
+        twice for the same event type is a no-op. This protects against
+        plugins being loaded twice (which used to fire every event handler
+        twice and double the work on each event).
+
         Returns an unsubscribe callable.
         """
+        if event_type is None:
+            for existing in self._wildcard:
+                if existing.handler is handler:
+                    return lambda: None
+        else:
+            for existing in self._subs.get(event_type, ()):
+                if existing.handler is handler:
+                    return lambda: None
+
         sub = _Subscription(handler=handler, priority=priority, once=once)
         if event_type is None:
             self._wildcard.append(sub)

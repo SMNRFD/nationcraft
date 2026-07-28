@@ -209,10 +209,10 @@ async def cb_select_country(cb: CallbackQuery) -> None:
     try:
         result = await api_client.select_country(tid, int(world_id), code)
     except NationCraftError as exc:
-        await cb.message.answer(f"❌ {exc}")
+        await _safe_edit(cb.message, f"❌ {exc}", reply_markup=main_menu_keyboard())
         await _safe_answer(cb)
         return
-    await _safe_edit(cb.message, 
+    await _safe_edit(cb.message,
         f"✅ You are now the ruler of *{result['name']}* {result['flag_emoji']}!",
         parse_mode="Markdown",
         reply_markup=main_menu_keyboard(),

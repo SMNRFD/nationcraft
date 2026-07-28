@@ -1,19 +1,37 @@
-"""Redis cache layer."""
+"""Redis cache layer.
+
+The connection is configured with bounded socket timeouts so that a
+hung Redis cannot block the API startup or the request path indefinitely.
+Previously, no socket timeouts were set — meaning a Redis process that
+accepted TCP but didn't respond to commands could hang the bot forever.
+"""
 from __future__ import annotations
 
 import json
 from typing import Any
 
 import redis.asyncio as aioredis
+from redis.exceptions import ConnectionError as RedisConnectionError, TimeoutError as RedisTimeoutError
 
 from nationcraft.core.config import settings
 
 
 class RedisCache:
-    """Thin async wrapper around redis.asyncio with JSON serialization."""
+    """Thin async wrapper around redis.asyncio with JSON serialization.
+
+    All operations are bounded by ``socket_connect_timeout=2.0`` and
+    ``socket_timeout=2.0`` so a hung Redis cannot stall the event loop.
+    """
 
     def __init__(self, url: str | None = None) -> None:
-        self._redis = aioredis.from_url(url or settings.REDIS_URL, decode_responses=True)
+        self._redis = aioredis.from_url(
+            url or settings.REDIS_URL,
+            decode_responses=True,
+            socket_connect_timeout=2.0,
+            socket_timeout=2.0,
+            retry_on_timeout=True,
+            retry_on_error=[RedisConnectionError, RedisTimeoutError],
+        )
 
     async def get(self, key: str) -> Any | None:
         raw = await self._redis.get(key)

@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 @pytest.fixture
 def test_app():
+    import asyncio
     import os
     os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///:memory:"
     engine = create_async_engine("sqlite+aiosqlite:///:memory:")
@@ -20,8 +21,11 @@ def test_app():
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
 
-    import asyncio
-    asyncio.get_event_loop().run_until_complete(_setup())
+    # Python 3.12+ removed the deprecated asyncio.get_event_loop() that
+    # would auto-create a loop. Use asyncio.run() which creates and
+    # disposes a fresh loop — the engine itself survives because it
+    # doesn't depend on the loop after _setup() returns.
+    asyncio.run(_setup())
 
     maker = async_sessionmaker(bind=engine, expire_on_commit=False, class_=AsyncSession)
 

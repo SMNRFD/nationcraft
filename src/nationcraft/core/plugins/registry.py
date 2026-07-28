@@ -52,6 +52,15 @@ class PluginRegistry:
         self._plugins: dict[str, PluginRecord] = {}
 
     def add(self, manifest: PluginManifest, path: Path) -> PluginRecord:
+        """Idempotent: if a plugin with this id is already registered, keep
+        the existing record (which may be in LOADED/ENABLED state). Re-adding
+        would otherwise reset the state to DISCOVERED and trigger a second
+        load — causing every hook and event subscription to fire twice per
+        tick, which was the root cause of doubled tick durations on SQLite.
+        """
+        existing = self._plugins.get(manifest.id)
+        if existing is not None:
+            return existing
         rec = PluginRecord(manifest=manifest, path=path)
         self._plugins[manifest.id] = rec
         return rec
@@ -118,13 +127,13 @@ class PluginRegistry:
         try:
             import asyncio
             from nationcraft.core.events import Event
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
-                loop.create_task(event_bus.publish(
-                    Event(type="plugin.loaded",
-                          payload={"plugin_id": manifest.id, "version": manifest.version})
-                ))
+            loop = asyncio.get_running_loop()
+            loop.create_task(event_bus.publish(
+                Event(type="plugin.loaded",
+                      payload={"plugin_id": manifest.id, "version": manifest.version})
+            ))
         except RuntimeError:
+            # No running loop (e.g., during synchronous tests) — skip.
             pass
 
     def unload(self, plugin_id: str) -> None:

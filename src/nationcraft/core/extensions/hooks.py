@@ -73,10 +73,20 @@ class HookRegistry:
         self._hooks: dict[str, list[Hook]] = {}
 
     def register(self, name: str, handler: HookHandler, *, priority: int = HookPriority.DEFAULT, plugin_id: str | None = None) -> None:
-        self._hooks.setdefault(name, []).append(
+        """Idempotent on (name, handler) — registering the same callable
+        twice for the same hook is a no-op. This protects against plugins
+        being loaded twice (which used to double every hook invocation and
+        double the work done per tick on SQLite, worsening lock contention).
+        """
+        bucket = self._hooks.setdefault(name, [])
+        # Skip if this exact handler is already registered for this hook.
+        for existing in bucket:
+            if existing.handler is handler:
+                return
+        bucket.append(
             Hook(name=name, handler=handler, priority=priority, plugin_id=plugin_id)
         )
-        self._hooks[name].sort(key=lambda h: h.priority)
+        bucket.sort(key=lambda h: h.priority)
 
     def unregister(self, name: str, handler: HookHandler) -> None:
         if name in self._hooks:

@@ -167,7 +167,24 @@ async def run_api(host: str, port: int, reload: bool = False) -> None:
 
 
 async def run_worker() -> None:
-    """Run the tick engine worker."""
+    """Run the tick engine worker.
+
+    Plugin loading is **idempotent** (see ``PluginRegistry.add``): if the
+    API lifespan has already loaded plugins (which happens when running
+    all-in-one with ``python main.py``), this is a no-op. If the worker is
+    run standalone (``python main.py --only worker``), this is the only
+    place plugins are loaded — without this, plugin tick hooks would
+    never fire in worker-only mode.
+
+    Previously, even with idempotent registry, this function's
+    ``loader.discover() + loader.load_all()`` calls in addition to the
+    API lifespan doing the same caused the space_race plugin's tick hooks
+    to be subscribed TWICE per tick (because the old ``PluginRegistry.add``
+    unconditionally overwrote the existing record, resetting its state
+    from ENABLED back to DISCOVERED). The idempotent ``add`` + the
+    idempotent ``HookRegistry.register`` together eliminate the duplicate
+    subscription.
+    """
     from nationcraft.application.services import register_default_handlers
     from nationcraft.core.plugins import PluginLoader
     from nationcraft.core.tick import TickRunner

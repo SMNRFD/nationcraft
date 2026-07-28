@@ -31,9 +31,16 @@ class PluginLoader:
                     continue
                 try:
                     manifest = PluginManifest.from_path(manifest_path)
+                    # add() is idempotent — if the plugin was already
+                    # discovered (e.g., by the API lifespan), this is a no-op
+                    # and we skip the noisy "plugin.discovered" log line.
+                    existing = self.registry.get(manifest.id)
                     self.registry.add(manifest, child)
-                    count += 1
-                    log.info("plugin.discovered", plugin=manifest.id, dir=str(child))
+                    if existing is None:
+                        count += 1
+                        log.info("plugin.discovered", plugin=manifest.id, dir=str(child))
+                    else:
+                        log.debug("plugin.already_discovered", plugin=manifest.id)
                 except Exception:  # noqa: BLE001
                     log.exception("plugin.discovery.failed", dir=str(child))
         return count
