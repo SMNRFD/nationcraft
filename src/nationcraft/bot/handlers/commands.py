@@ -18,8 +18,9 @@ from aiogram.types import Message
 from nationcraft.bot.api_client import api_client
 from nationcraft.bot.handlers.states.auth import AuthStates
 from nationcraft.bot.keyboards import InlineKeyboardBuilder, main_menu_keyboard
+from nationcraft.bot.utils import escape_md, safe_send
 from nationcraft.core.config import settings
-from nationcraft.core.exceptions import NationCraftError
+from nationcraft.core.exceptions import NationCraftError, is_transient_error
 from nationcraft.core.i18n import _
 from nationcraft.core.logging import get_logger
 
@@ -44,8 +45,13 @@ _NOT_COMMAND = F.text & ~F.text.startswith("/")
 @router.message(CommandStart())
 async def cmd_start(message: Message, state: FSMContext, locale: str = "en") -> None:
     await state.clear()
-    await message.answer(
-        _("common.welcome", locale=locale, username=message.from_user.full_name)
+    # Escape the username so Telegram's Markdown parser doesn't choke
+    # on underscores, asterisks, etc. in the user's display name.
+    # (Previously: TelegramBadRequest: can't parse entities at byte offset N)
+    safe_name = escape_md(message.from_user.full_name)
+    await safe_send(
+        message,
+        _("common.welcome", locale=locale, username=safe_name)
         + "\n\n"
         + _("auth.register_prompt_short", locale=locale),
         reply_markup=main_menu_keyboard(),
@@ -295,36 +301,49 @@ async def process_register(message: Message, state: FSMContext, locale: str = "e
             username=user.username, locale=locale,
         )
     except NationCraftError as exc:
-        # ALWAYS clear state on ANY error — prevents getting stuck.
-        await state.clear()
         if exc.code == "player_exists":
+            # Definitive auth error — clear state, user must /login.
+            await state.clear()
             await message.answer(
                 _("auth.already_registered", locale=locale),
                 reply_markup=main_menu_keyboard(),
             )
             return
+        if is_transient_error(exc):
+            # Network error (502, 503, timeout) — DON'T clear state
+            # so the user can retry by sending the password again.
+            await message.answer(
+                _("errors.api_unreachable", locale=locale),
+                reply_markup=main_menu_keyboard(),
+            )
+            return
+        # Other API error (e.g. validation) — clear state.
+        await state.clear()
         await message.answer(
             _("errors.error_with_message", locale=locale, message=str(exc)),
             reply_markup=main_menu_keyboard(),
         )
         return
     except Exception as exc:  # noqa: BLE001
-        # ALWAYS clear state on ANY error — prevents getting stuck.
-        await state.clear()
+        # Unexpected error — DON'T clear state on transient errors
+        # so the user can retry. Clear on definitive failures.
         log.exception("bot.register.failed", error=str(exc))
         await message.answer(
-            _("errors.internal", locale=locale),
+            _("errors.api_unreachable", locale=locale),
             reply_markup=main_menu_keyboard(),
         )
         return
     # Success — clear state.
     await state.clear()
-    await message.answer(
-        _("auth.register_success", locale=locale, username=user.full_name),
+    safe_name = escape_md(user.full_name)
+    await safe_send(
+        message,
+        _("auth.register_success", locale=locale, username=safe_name),
         parse_mode="Markdown",
         reply_markup=main_menu_keyboard(),
     )
-    await message.answer(
+    await safe_send(
+        message,
         _("auth.welcome_message", locale=locale),
         parse_mode="Markdown",
     )
@@ -341,7 +360,14 @@ async def process_login(message: Message, state: FSMContext, locale: str = "en")
     try:
         await api_client.login(telegram_id=user.id, password=password)
     except NationCraftError as exc:
-        # ALWAYS clear state on ANY error — prevents getting stuck.
+        if is_transient_error(exc):
+            # Network error — DON'T clear state, user can retry.
+            await message.answer(
+                _("errors.api_unreachable", locale=locale),
+                reply_markup=main_menu_keyboard(),
+            )
+            return
+        # Auth error (wrong password, banned, etc.) — clear state.
         await state.clear()
         await message.answer(
             _("auth.login_failed", locale=locale, message=str(exc)),
@@ -349,11 +375,9 @@ async def process_login(message: Message, state: FSMContext, locale: str = "en")
         )
         return
     except Exception as exc:  # noqa: BLE001
-        # ALWAYS clear state on ANY error — prevents getting stuck.
-        await state.clear()
         log.exception("bot.login.failed", error=str(exc))
         await message.answer(
-            _("errors.internal", locale=locale),
+            _("errors.api_unreachable", locale=locale),
             reply_markup=main_menu_keyboard(),
         )
         return
@@ -394,6 +418,12 @@ async def process_new_password(message: Message, state: FSMContext, locale: str 
             new_password=new_password,
         )
     except NationCraftError as exc:
+        if is_transient_error(exc):
+            await message.answer(
+                _("errors.api_unreachable", locale=locale),
+                reply_markup=main_menu_keyboard(),
+            )
+            return
         await state.clear()
         await message.answer(
             _("errors.error_with_message", locale=locale, message=str(exc)),
@@ -401,10 +431,9 @@ async def process_new_password(message: Message, state: FSMContext, locale: str 
         )
         return
     except Exception as exc:  # noqa: BLE001
-        await state.clear()
         log.exception("bot.reset_password.failed", error=str(exc))
         await message.answer(
-            _("errors.internal", locale=locale),
+            _("errors.api_unreachable", locale=locale),
             reply_markup=main_menu_keyboard(),
         )
         return

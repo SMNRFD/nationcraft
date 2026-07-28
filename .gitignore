@@ -55,11 +55,3 @@ coverage.xml
 # OS
 .DS_Store
 Thumbs.db
-
-# Instruction
-bugs.txt
-prompt.txt
-
-# Database
-nationcraft.db-shm
-nationcraft.db-wal

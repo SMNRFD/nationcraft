@@ -1,0 +1,983 @@
+C:\Users\SMN\Desktop\Python\Game\Telegram_Bot\Nationcraft\nationcraft>python main.py --local --initdb
+2026-07-28 12:23:23 [info     ] main.config.local_overrides_applied api_base_url=http://localhost:8000 database_url=sqlite+aiosqlite:///nationcraft.db redis_url=redis://localhost:6379/0
+2026-07-28T08:53:23.365628Z [info     ] main.start                     env=development host=0.0.0.0 local=True only=None port=8000
+2026-07-28T08:53:24.965344Z [info     ] migrations.applied             method=create_all url=sqlite
+2026-07-28 12:23:25,246 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+BEGIN (implicit)
+2026-07-28 12:23:25,288 INFO sqlalchemy.engine.Engine SELECT worlds.id, worlds.name, worlds.slug, worlds.status, worlds.player_capacity, worlds.player_count, worlds.tick_count, worlds.last_tick_at, worlds.meta, worlds.created_at, worlds.updated_at, worlds.deleted_at
+FROM worlds
+WHERE worlds.status = ? AND worlds.deleted_at IS NULL ORDER BY worlds.id
+SELECT worlds.id, worlds.name, worlds.slug, worlds.status, worlds.player_capacity, worlds.player_count, worlds.tick_count, worlds.last_tick_at, worlds.meta, worlds.created_at, worlds.updated_at, worlds.deleted_at
+FROM worlds
+WHERE worlds.status = ? AND worlds.deleted_at IS NULL ORDER BY worlds.id
+2026-07-28 12:23:25,288 INFO sqlalchemy.engine.Engine [generated in 0.00062s] ('open',)
+[generated in 0.00062s] ('open',)
+2026-07-28 12:23:25,295 INFO sqlalchemy.engine.Engine SELECT worlds.id, worlds.name, worlds.slug, worlds.status, worlds.player_capacity, worlds.player_count, worlds.tick_count, worlds.last_tick_at, worlds.meta, worlds.created_at, worlds.updated_at, worlds.deleted_at
+FROM worlds
+WHERE worlds.slug = ? AND worlds.deleted_at IS NULL
+SELECT worlds.id, worlds.name, worlds.slug, worlds.status, worlds.player_capacity, worlds.player_count, worlds.tick_count, worlds.last_tick_at, worlds.meta, worlds.created_at, worlds.updated_at, worlds.deleted_at
+FROM worlds
+WHERE worlds.slug = ? AND worlds.deleted_at IS NULL
+2026-07-28 12:23:25,296 INFO sqlalchemy.engine.Engine [generated in 0.00077s] ('world-1',)
+[generated in 0.00077s] ('world-1',)
+2026-07-28 12:23:25,301 INFO sqlalchemy.engine.Engine INSERT INTO worlds (name, slug, status, player_capacity, player_count, tick_count, last_tick_at, meta, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id, created_at, updated_at
+INSERT INTO worlds (name, slug, status, player_capacity, player_count, tick_count, last_tick_at, meta, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id, created_at, updated_at
+2026-07-28 12:23:25,301 INFO sqlalchemy.engine.Engine [generated in 0.00071s] ('World 1', 'world-1', 'open', 200, 0, 0, None, '{}', None)
+[generated in 0.00071s] ('World 1', 'world-1', 'open', 200, 0, 0, None, '{}', None)
+2026-07-28 12:23:25,514 INFO sqlalchemy.engine.Engine INSERT INTO countries (world_id, player_id, code, name, flag_emoji, government, population, treasury, debt, approval, stability, corruption, education, healthcare, electricity_balance, water_balance, housing_capacity, pollution, research_points, meta, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id, created_at, updated_at
+INSERT INTO countries (world_id, player_id, code, name, flag_emoji, government, population, treasury, debt, approval, stability, corruption, education, healthcare, electricity_balance, water_balance, housing_capacity, pollution, research_points, meta, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id, created_at, updated_at
+2026-07-28 12:23:25,514 INFO sqlalchemy.engine.Engine [generated in 0.00063s (insertmanyvalues) 1/14 (ordered; batch not supported)] (1, None, 'IR', 'Iran', '🇮🇷', 'republic', 85000000, 2000000.0, 0.0, 50.0, 50.0, 10.0, 50.0, 50.0, 0.0, 0.0, 1000000, 0.0, 0.0, '{}', None)
+[generated in 0.00063s (insertmanyvalues) 1/14 (ordered; batch not supported)] (1, None, 'IR', 'Iran', '🇮🇷', 'republic', 85000000, 2000000.0, 0.0, 50.0, 50.0, 10.0, 50.0, 50.0, 0.0, 0.0, 1000000, 0.0, 0.0, '{}', None)
+2026-07-28 12:23:25,518 INFO sqlalchemy.engine.Engine INSERT INTO countries (world_id, player_id, code, name, flag_emoji, government, population, treasury, debt, approval, stability, corruption, education, healthcare, electricity_balance, water_balance, housing_capacity, pollution, research_points, meta, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id, created_at, updated_at
+INSERT INTO countries (world_id, player_id, code, name, flag_emoji, government, population, treasury, debt, approval, stability, corruption, education, healthcare, electricity_balance, water_balance, housing_capacity, pollution, research_points, meta, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id, created_at, updated_at
+2026-07-28 12:23:25,519 INFO sqlalchemy.engine.Engine [insertmanyvalues 2/14 (ordered; batch not supported)] (1, None, 'JP', 'Japan', '🇯🇵', 'republic', 125000000, 5000000.0, 0.0, 50.0, 50.0, 10.0, 50.0, 50.0, 0.0, 0.0, 1000000, 0.0, 0.0, '{}', None)
+[insertmanyvalues 2/14 (ordered; batch not supported)] (1, None, 'JP', 'Japan', '🇯🇵', 'republic', 125000000, 5000000.0, 0.0, 50.0, 50.0, 10.0, 50.0, 50.0, 0.0, 0.0, 1000000, 0.0, 0.0, '{}', None)
+2026-07-28 12:23:25,522 INFO sqlalchemy.engine.Engine INSERT INTO countries (world_id, player_id, code, name, flag_emoji, government, population, treasury, debt, approval, stability, corruption, education, healthcare, electricity_balance, water_balance, housing_capacity, pollution, research_points, meta, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id, created_at, updated_at
+INSERT INTO countries (world_id, player_id, code, name, flag_emoji, government, population, treasury, debt, approval, stability, corruption, education, healthcare, electricity_balance, water_balance, housing_capacity, pollution, research_points, meta, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id, created_at, updated_at
+2026-07-28 12:23:25,522 INFO sqlalchemy.engine.Engine [insertmanyvalues 3/14 (ordered; batch not supported)] (1, None, 'DE', 'Germany', '🇩🇪', 'republic', 83000000, 4500000.0, 0.0, 50.0, 50.0, 10.0, 50.0, 50.0, 0.0, 0.0, 1000000, 0.0, 0.0, '{}', None)
+[insertmanyvalues 3/14 (ordered; batch not supported)] (1, None, 'DE', 'Germany', '🇩🇪', 'republic', 83000000, 4500000.0, 0.0, 50.0, 50.0, 10.0, 50.0, 50.0, 0.0, 0.0, 1000000, 0.0, 0.0, '{}', None)
+2026-07-28 12:23:25,525 INFO sqlalchemy.engine.Engine INSERT INTO countries (world_id, player_id, code, name, flag_emoji, government, population, treasury, debt, approval, stability, corruption, education, healthcare, electricity_balance, water_balance, housing_capacity, pollution, research_points, meta, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id, created_at, updated_at
+INSERT INTO countries (world_id, player_id, code, name, flag_emoji, government, population, treasury, debt, approval, stability, corruption, education, healthcare, electricity_balance, water_balance, housing_capacity, pollution, research_points, meta, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id, created_at, updated_at
+2026-07-28 12:23:25,526 INFO sqlalchemy.engine.Engine [insertmanyvalues 4/14 (ordered; batch not supported)] (1, None, 'BR', 'Brazil', '🇧🇷', 'republic', 215000000, 3000000.0, 0.0, 50.0, 50.0, 10.0, 50.0, 50.0, 0.0, 0.0, 1000000, 0.0, 0.0, '{}', None)
+[insertmanyvalues 4/14 (ordered; batch not supported)] (1, None, 'BR', 'Brazil', '🇧🇷', 'republic', 215000000, 3000000.0, 0.0, 50.0, 50.0, 10.0, 50.0, 50.0, 0.0, 0.0, 1000000, 0.0, 0.0, '{}', None)
+2026-07-28 12:23:25,528 INFO sqlalchemy.engine.Engine INSERT INTO countries (world_id, player_id, code, name, flag_emoji, government, population, treasury, debt, approval, stability, corruption, education, healthcare, electricity_balance, water_balance, housing_capacity, pollution, research_points, meta, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id, created_at, updated_at
+INSERT INTO countries (world_id, player_id, code, name, flag_emoji, government, population, treasury, debt, approval, stability, corruption, education, healthcare, electricity_balance, water_balance, housing_capacity, pollution, research_points, meta, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id, created_at, updated_at
+2026-07-28 12:23:25,529 INFO sqlalchemy.engine.Engine [insertmanyvalues 5/14 (ordered; batch not supported)] (1, None, 'US', 'United States', '🇺🇸', 'republic', 330000000, 10000000.0, 0.0, 50.0, 50.0, 10.0, 50.0, 50.0, 0.0, 0.0, 1000000, 0.0, 0.0, '{}', None)
+[insertmanyvalues 5/14 (ordered; batch not supported)] (1, None, 'US', 'United States', '🇺🇸', 'republic', 330000000, 10000000.0, 0.0, 50.0, 50.0, 10.0, 50.0, 50.0, 0.0, 0.0, 1000000, 0.0, 0.0, '{}', None)
+2026-07-28 12:23:25,530 INFO sqlalchemy.engine.Engine INSERT INTO countries (world_id, player_id, code, name, flag_emoji, government, population, treasury, debt, approval, stability, corruption, education, healthcare, electricity_balance, water_balance, housing_capacity, pollution, research_points, meta, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id, created_at, updated_at
+INSERT INTO countries (world_id, player_id, code, name, flag_emoji, government, population, treasury, debt, approval, stability, corruption, education, healthcare, electricity_balance, water_balance, housing_capacity, pollution, research_points, meta, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id, created_at, updated_at
+2026-07-28 12:23:25,531 INFO sqlalchemy.engine.Engine [insertmanyvalues 6/14 (ordered; batch not supported)] (1, None, 'CN', 'China', '🇨🇳', 'republic', 1400000000, 8000000.0, 0.0, 50.0, 50.0, 10.0, 50.0, 50.0, 0.0, 0.0, 1000000, 0.0, 0.0, '{}', None)
+[insertmanyvalues 6/14 (ordered; batch not supported)] (1, None, 'CN', 'China', '🇨🇳', 'republic', 1400000000, 8000000.0, 0.0, 50.0, 50.0, 10.0, 50.0, 50.0, 0.0, 0.0, 1000000, 0.0, 0.0, '{}', None)
+2026-07-28 12:23:25,533 INFO sqlalchemy.engine.Engine INSERT INTO countries (world_id, player_id, code, name, flag_emoji, government, population, treasury, debt, approval, stability, corruption, education, healthcare, electricity_balance, water_balance, housing_capacity, pollution, research_points, meta, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id, created_at, updated_at
+INSERT INTO countries (world_id, player_id, code, name, flag_emoji, government, population, treasury, debt, approval, stability, corruption, education, healthcare, electricity_balance, water_balance, housing_capacity, pollution, research_points, meta, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id, created_at, updated_at
+2026-07-28 12:23:25,533 INFO sqlalchemy.engine.Engine [insertmanyvalues 7/14 (ordered; batch not supported)] (1, None, 'RU', 'Russia', '🇷🇺', 'republic', 145000000, 6000000.0, 0.0, 50.0, 50.0, 10.0, 50.0, 50.0, 0.0, 0.0, 1000000, 0.0, 0.0, '{}', None)
+[insertmanyvalues 7/14 (ordered; batch not supported)] (1, None, 'RU', 'Russia', '🇷🇺', 'republic', 145000000, 6000000.0, 0.0, 50.0, 50.0, 10.0, 50.0, 50.0, 0.0, 0.0, 1000000, 0.0, 0.0, '{}', None)
+2026-07-28 12:23:25,535 INFO sqlalchemy.engine.Engine INSERT INTO countries (world_id, player_id, code, name, flag_emoji, government, population, treasury, debt, approval, stability, corruption, education, healthcare, electricity_balance, water_balance, housing_capacity, pollution, research_points, meta, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id, created_at, updated_at
+INSERT INTO countries (world_id, player_id, code, name, flag_emoji, government, population, treasury, debt, approval, stability, corruption, education, healthcare, electricity_balance, water_balance, housing_capacity, pollution, research_points, meta, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id, created_at, updated_at
+2026-07-28 12:23:25,535 INFO sqlalchemy.engine.Engine [insertmanyvalues 8/14 (ordered; batch not supported)] (1, None, 'IN', 'India', '🇮🇳', 'republic', 1400000000, 4000000.0, 0.0, 50.0, 50.0, 10.0, 50.0, 50.0, 0.0, 0.0, 1000000, 0.0, 0.0, '{}', None)
+[insertmanyvalues 8/14 (ordered; batch not supported)] (1, None, 'IN', 'India', '🇮🇳', 'republic', 1400000000, 4000000.0, 0.0, 50.0, 50.0, 10.0, 50.0, 50.0, 0.0, 0.0, 1000000, 0.0, 0.0, '{}', None)
+2026-07-28 12:23:25,536 INFO sqlalchemy.engine.Engine INSERT INTO countries (world_id, player_id, code, name, flag_emoji, government, population, treasury, debt, approval, stability, corruption, education, healthcare, electricity_balance, water_balance, housing_capacity, pollution, research_points, meta, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id, created_at, updated_at
+INSERT INTO countries (world_id, player_id, code, name, flag_emoji, government, population, treasury, debt, approval, stability, corruption, education, healthcare, electricity_balance, water_balance, housing_capacity, pollution, research_points, meta, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id, created_at, updated_at
+2026-07-28 12:23:25,537 INFO sqlalchemy.engine.Engine [insertmanyvalues 9/14 (ordered; batch not supported)] (1, None, 'FR', 'France', '🇫🇷', 'republic', 67000000, 4500000.0, 0.0, 50.0, 50.0, 10.0, 50.0, 50.0, 0.0, 0.0, 1000000, 0.0, 0.0, '{}', None)
+[insertmanyvalues 9/14 (ordered; batch not supported)] (1, None, 'FR', 'France', '🇫🇷', 'republic', 67000000, 4500000.0, 0.0, 50.0, 50.0, 10.0, 50.0, 50.0, 0.0, 0.0, 1000000, 0.0, 0.0, '{}', None)
+2026-07-28 12:23:25,538 INFO sqlalchemy.engine.Engine INSERT INTO countries (world_id, player_id, code, name, flag_emoji, government, population, treasury, debt, approval, stability, corruption, education, healthcare, electricity_balance, water_balance, housing_capacity, pollution, research_points, meta, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id, created_at, updated_at
+INSERT INTO countries (world_id, player_id, code, name, flag_emoji, government, population, treasury, debt, approval, stability, corruption, education, healthcare, electricity_balance, water_balance, housing_capacity, pollution, research_points, meta, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id, created_at, updated_at
+2026-07-28 12:23:25,538 INFO sqlalchemy.engine.Engine [insertmanyvalues 10/14 (ordered; batch not supported)] (1, None, 'GB', 'United Kingdom', '🇬🇧', 'republic', 67000000, 4500000.0, 0.0, 50.0, 50.0, 10.0, 50.0, 50.0, 0.0, 0.0, 1000000, 0.0, 0.0, '{}', None)
+[insertmanyvalues 10/14 (ordered; batch not supported)] (1, None, 'GB', 'United Kingdom', '🇬🇧', 'republic', 67000000, 4500000.0, 0.0, 50.0, 50.0, 10.0, 50.0, 50.0, 0.0, 0.0, 1000000, 0.0, 0.0, '{}', None)
+2026-07-28 12:23:25,541 INFO sqlalchemy.engine.Engine INSERT INTO countries (world_id, player_id, code, name, flag_emoji, government, population, treasury, debt, approval, stability, corruption, education, healthcare, electricity_balance, water_balance, housing_capacity, pollution, research_points, meta, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id, created_at, updated_at
+INSERT INTO countries (world_id, player_id, code, name, flag_emoji, government, population, treasury, debt, approval, stability, corruption, education, healthcare, electricity_balance, water_balance, housing_capacity, pollution, research_points, meta, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id, created_at, updated_at
+2026-07-28 12:23:25,541 INFO sqlalchemy.engine.Engine [insertmanyvalues 11/14 (ordered; batch not supported)] (1, None, 'TR', 'Türkiye', '🇹🇷', 'republic', 85000000, 3000000.0, 0.0, 50.0, 50.0, 10.0, 50.0, 50.0, 0.0, 0.0, 1000000, 0.0, 0.0, '{}', None)
+[insertmanyvalues 11/14 (ordered; batch not supported)] (1, None, 'TR', 'Türkiye', '🇹🇷', 'republic', 85000000, 3000000.0, 0.0, 50.0, 50.0, 10.0, 50.0, 50.0, 0.0, 0.0, 1000000, 0.0, 0.0, '{}', None)
+2026-07-28 12:23:25,542 INFO sqlalchemy.engine.Engine INSERT INTO countries (world_id, player_id, code, name, flag_emoji, government, population, treasury, debt, approval, stability, corruption, education, healthcare, electricity_balance, water_balance, housing_capacity, pollution, research_points, meta, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id, created_at, updated_at
+INSERT INTO countries (world_id, player_id, code, name, flag_emoji, government, population, treasury, debt, approval, stability, corruption, education, healthcare, electricity_balance, water_balance, housing_capacity, pollution, research_points, meta, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id, created_at, updated_at
+2026-07-28 12:23:25,544 INFO sqlalchemy.engine.Engine [insertmanyvalues 12/14 (ordered; batch not supported)] (1, None, 'SA', 'Saudi Arabia', '🇸🇦', 'republic', 35000000, 8000000.0, 0.0, 50.0, 50.0, 10.0, 50.0, 50.0, 0.0, 0.0, 1000000, 0.0, 0.0, '{}', None)
+[insertmanyvalues 12/14 (ordered; batch not supported)] (1, None, 'SA', 'Saudi Arabia', '🇸🇦', 'republic', 35000000, 8000000.0, 0.0, 50.0, 50.0, 10.0, 50.0, 50.0, 0.0, 0.0, 1000000, 0.0, 0.0, '{}', None)
+2026-07-28 12:23:25,545 INFO sqlalchemy.engine.Engine INSERT INTO countries (world_id, player_id, code, name, flag_emoji, government, population, treasury, debt, approval, stability, corruption, education, healthcare, electricity_balance, water_balance, housing_capacity, pollution, research_points, meta, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id, created_at, updated_at
+INSERT INTO countries (world_id, player_id, code, name, flag_emoji, government, population, treasury, debt, approval, stability, corruption, education, healthcare, electricity_balance, water_balance, housing_capacity, pollution, research_points, meta, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id, created_at, updated_at
+2026-07-28 12:23:25,546 INFO sqlalchemy.engine.Engine [insertmanyvalues 13/14 (ordered; batch not supported)] (1, None, 'AU', 'Australia', '🇦🇺', 'republic', 26000000, 4000000.0, 0.0, 50.0, 50.0, 10.0, 50.0, 50.0, 0.0, 0.0, 1000000, 0.0, 0.0, '{}', None)
+[insertmanyvalues 13/14 (ordered; batch not supported)] (1, None, 'AU', 'Australia', '🇦🇺', 'republic', 26000000, 4000000.0, 0.0, 50.0, 50.0, 10.0, 50.0, 50.0, 0.0, 0.0, 1000000, 0.0, 0.0, '{}', None)
+2026-07-28 12:23:25,547 INFO sqlalchemy.engine.Engine INSERT INTO countries (world_id, player_id, code, name, flag_emoji, government, population, treasury, debt, approval, stability, corruption, education, healthcare, electricity_balance, water_balance, housing_capacity, pollution, research_points, meta, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id, created_at, updated_at
+INSERT INTO countries (world_id, player_id, code, name, flag_emoji, government, population, treasury, debt, approval, stability, corruption, education, healthcare, electricity_balance, water_balance, housing_capacity, pollution, research_points, meta, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id, created_at, updated_at
+2026-07-28 12:23:25,548 INFO sqlalchemy.engine.Engine [insertmanyvalues 14/14 (ordered; batch not supported)] (1, None, 'CA', 'Canada', '🇨🇦', 'republic', 38000000, 4000000.0, 0.0, 50.0, 50.0, 10.0, 50.0, 50.0, 0.0, 0.0, 1000000, 0.0, 0.0, '{}', None)
+[insertmanyvalues 14/14 (ordered; batch not supported)] (1, None, 'CA', 'Canada', '🇨🇦', 'republic', 38000000, 4000000.0, 0.0, 50.0, 50.0, 10.0, 50.0, 50.0, 0.0, 0.0, 1000000, 0.0, 0.0, '{}', None)
+2026-07-28 12:23:25,552 INFO sqlalchemy.engine.Engine SELECT worlds.id, worlds.name, worlds.slug, worlds.status, worlds.player_capacity, worlds.player_count, worlds.tick_count, worlds.last_tick_at, worlds.meta, worlds.created_at, worlds.updated_at, worlds.deleted_at
+FROM worlds
+WHERE worlds.status = ? AND worlds.deleted_at IS NULL ORDER BY worlds.id
+SELECT worlds.id, worlds.name, worlds.slug, worlds.status, worlds.player_capacity, worlds.player_count, worlds.tick_count, worlds.last_tick_at, worlds.meta, worlds.created_at, worlds.updated_at, worlds.deleted_at
+FROM worlds
+WHERE worlds.status = ? AND worlds.deleted_at IS NULL ORDER BY worlds.id
+2026-07-28 12:23:25,552 INFO sqlalchemy.engine.Engine [cached since 0.2653s ago] ('open',)
+[cached since 0.2653s ago] ('open',)
+2026-07-28T08:53:25.562121Z [info     ] initdb.game_data.loaded        buildings=22 countries=14 events=11 missions=10 resources=27 techs=21 units=23
+2026-07-28 12:23:25,565 INFO sqlalchemy.engine.Engine COMMIT
+COMMIT
+2026-07-28T08:53:25.569100Z [info     ] initdb.complete
+
+C:\Users\SMN\Desktop\Python\Game\Telegram_Bot\Nationcraft\nationcraft>python main.py --local
+2026-07-28 12:24:25 [info     ] main.config.local_overrides_applied api_base_url=http://localhost:8000 database_url=sqlite+aiosqlite:///nationcraft.db redis_url=redis://localhost:6379/0
+2026-07-28T08:54:25.038980Z [info     ] main.start                     env=development host=0.0.0.0 local=True only=None port=8000
+2026-07-28T08:54:25.047990Z [warning  ] bot.skipped                    reason='TELEGRAM_BOT_TOKEN not set'
+2026-07-28T08:54:25.250252Z [info     ] api.starting                   host=0.0.0.0 port=8000 reload=False
+Started server process [12132]
+Waiting for application startup.
+2026-07-28T08:54:27.532084Z [info     ] plugin.discovered              dir=plugins\space_race plugin=space_race
+2026-07-28T08:54:27.536210Z [info     ] space_race.starting            config={}
+2026-07-28T08:54:27.536210Z [info     ] plugin.resource.registered     key=plasma
+2026-07-28T08:54:27.540732Z [info     ] plugin.building.registered     key=fusion_reactor
+2026-07-28T08:54:27.540732Z [info     ] plugin.tech.registered         key=fusion_drive
+2026-07-28T08:54:27.540732Z [info     ] space_race.registered
+2026-07-28T08:54:27.540732Z [info     ] plugin.loaded                  plugin=space_race version=1.0.0
+2026-07-28T08:54:27.540732Z [info     ] tick.handlers.registered
+2026-07-28T08:54:27.540732Z [info     ] worker.starting                interval=60
+2026-07-28T08:54:27.540732Z [info     ] tick.runner.start              interval=60
+2026-07-28T08:54:27.550595Z [info     ] api.startup                    env=development
+2026-07-28 12:24:27,584 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+BEGIN (implicit)
+2026-07-28 12:24:27,670 INFO sqlalchemy.engine.Engine SELECT worlds.id, worlds.name, worlds.slug, worlds.status, worlds.player_capacity, worlds.player_count, worlds.tick_count, worlds.last_tick_at, worlds.meta, worlds.created_at, worlds.updated_at, worlds.deleted_at
+FROM worlds
+WHERE worlds.status IN (?, ?) AND worlds.deleted_at IS NULL ORDER BY worlds.id
+SELECT worlds.id, worlds.name, worlds.slug, worlds.status, worlds.player_capacity, worlds.player_count, worlds.tick_count, worlds.last_tick_at, worlds.meta, worlds.created_at, worlds.updated_at, worlds.deleted_at
+FROM worlds
+WHERE worlds.status IN (?, ?) AND worlds.deleted_at IS NULL ORDER BY worlds.id
+2026-07-28 12:24:27,670 INFO sqlalchemy.engine.Engine [generated in 0.00101s] ('open', 'full')
+[generated in 0.00101s] ('open', 'full')
+2026-07-28 12:24:27,743 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+BEGIN (implicit)
+2026-07-28 12:24:27,743 INFO sqlalchemy.engine.Engine SELECT 1
+SELECT 1
+2026-07-28 12:24:27,747 INFO sqlalchemy.engine.Engine [generated in 0.00376s] ()
+[generated in 0.00376s] ()
+2026-07-28 12:24:27,775 INFO sqlalchemy.engine.Engine ROLLBACK
+ROLLBACK
+2026-07-28T08:54:27.796078Z [info     ] api.db.ok
+2026-07-28 12:24:28,483 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+BEGIN (implicit)
+2026-07-28 12:24:28,490 INFO sqlalchemy.engine.Engine SELECT buildings.id, buildings.world_id, buildings.country_id, buildings."key", buildings.level, buildings.status, buildings.position_x, buildings.position_y, buildings.started_at, buildings.completes_at, buildings.produced_total, buildings.created_at, buildings.updated_at
+FROM buildings
+WHERE buildings.status = ? AND buildings.completes_at <= ?
+SELECT buildings.id, buildings.world_id, buildings.country_id, buildings."key", buildings.level, buildings.status, buildings.position_x, buildings.position_y, buildings.started_at, buildings.completes_at, buildings.produced_total, buildings.created_at, buildings.updated_at
+FROM buildings
+WHERE buildings.status = ? AND buildings.completes_at <= ?
+2026-07-28 12:24:28,490 INFO sqlalchemy.engine.Engine [generated in 0.00192s] ('under_construction', '2026-07-28 08:54:27.714858')
+[generated in 0.00192s] ('under_construction', '2026-07-28 08:54:27.714858')
+2026-07-28 12:24:28,503 INFO sqlalchemy.engine.Engine SELECT buildings.id, buildings.world_id, buildings.country_id, buildings."key", buildings.level, buildings.status, buildings.position_x, buildings.position_y, buildings.started_at, buildings.completes_at, buildings.produced_total, buildings.created_at, buildings.updated_at, countries.id AS id_1, countries.world_id AS world_id_1, countries.player_id, countries.code, countries.name, countries.flag_emoji, countries.government, countries.population, countries.treasury, countries.debt, countries.approval, countries.stability, countries.corruption, countries.education, countries.healthcare, countries.electricity_balance, countries.water_balance, countries.housing_capacity, countries.pollution, countries.research_points, countries.meta, countries.created_at AS created_at_1, countries.updated_at AS updated_at_1, countries.deleted_at
+FROM buildings JOIN countries ON countries.id = buildings.country_id
+WHERE buildings.world_id = ? AND buildings.status = ? AND countries.world_id = ?
+SELECT buildings.id, buildings.world_id, buildings.country_id, buildings."key", buildings.level, buildings.status, buildings.position_x, buildings.position_y, buildings.started_at, buildings.completes_at, buildings.produced_total, buildings.created_at, buildings.updated_at, countries.id AS id_1, countries.world_id AS world_id_1, countries.player_id, countries.code, countries.name, countries.flag_emoji, countries.government, countries.population, countries.treasury, countries.debt, countries.approval, countries.stability, countries.corruption, countries.education, countries.healthcare, countries.electricity_balance, countries.water_balance, countries.housing_capacity, countries.pollution, countries.research_points, countries.meta, countries.created_at AS created_at_1, countries.updated_at AS updated_at_1, countries.deleted_at
+FROM buildings JOIN countries ON countries.id = buildings.country_id
+WHERE buildings.world_id = ? AND buildings.status = ? AND countries.world_id = ?
+2026-07-28 12:24:28,503 INFO sqlalchemy.engine.Engine [generated in 0.00091s] (1, 'active', 1)
+[generated in 0.00091s] (1, 'active', 1)
+2026-07-28 12:24:28,514 INFO sqlalchemy.engine.Engine COMMIT
+COMMIT
+2026-07-28 12:24:28,520 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+BEGIN (implicit)
+2026-07-28 12:24:28,525 INFO sqlalchemy.engine.Engine SELECT buildings.id, buildings.world_id, buildings.country_id, buildings."key", buildings.level, buildings.status, buildings.position_x, buildings.position_y, buildings.started_at, buildings.completes_at, buildings.produced_total, buildings.created_at, buildings.updated_at
+FROM buildings
+WHERE buildings.world_id = ? AND buildings."key" = ?
+SELECT buildings.id, buildings.world_id, buildings.country_id, buildings."key", buildings.level, buildings.status, buildings.position_x, buildings.position_y, buildings.started_at, buildings.completes_at, buildings.produced_total, buildings.created_at, buildings.updated_at
+FROM buildings
+WHERE buildings.world_id = ? AND buildings."key" = ?
+2026-07-28 12:24:28,525 INFO sqlalchemy.engine.Engine [generated in 0.00085s] (1, 'fusion_reactor')
+[generated in 0.00085s] (1, 'fusion_reactor')
+2026-07-28 12:24:28,530 INFO sqlalchemy.engine.Engine COMMIT
+COMMIT
+2026-07-28T08:54:28.536046Z [info     ] space_race.tick.bonus          bonus=1.0 reactors=0 world_id=1
+2026-07-28 12:24:28,538 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+BEGIN (implicit)
+2026-07-28 12:24:28,543 INFO sqlalchemy.engine.Engine SELECT countries.id, countries.world_id, countries.player_id, countries.code, countries.name, countries.flag_emoji, countries.government, countries.population, countries.treasury, countries.debt, countries.approval, countries.stability, countries.corruption, countries.education, countries.healthcare, countries.electricity_balance, countries.water_balance, countries.housing_capacity, countries.pollution, countries.research_points, countries.meta, countries.created_at, countries.updated_at, countries.deleted_at
+FROM countries
+WHERE countries.world_id = ?
+SELECT countries.id, countries.world_id, countries.player_id, countries.code, countries.name, countries.flag_emoji, countries.government, countries.population, countries.treasury, countries.debt, countries.approval, countries.stability, countries.corruption, countries.education, countries.healthcare, countries.electricity_balance, countries.water_balance, countries.housing_capacity, countries.pollution, countries.research_points, countries.meta, countries.created_at, countries.updated_at, countries.deleted_at
+FROM countries
+WHERE countries.world_id = ?
+2026-07-28 12:24:28,543 INFO sqlalchemy.engine.Engine [generated in 0.00115s] (1,)
+[generated in 0.00115s] (1,)
+2026-07-28 12:24:28,562 INFO sqlalchemy.engine.Engine SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+2026-07-28 12:24:28,566 INFO sqlalchemy.engine.Engine [generated in 0.00357s] (1, 'food')
+[generated in 0.00357s] (1, 'food')
+2026-07-28 12:24:28,575 INFO sqlalchemy.engine.Engine SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+2026-07-28 12:24:28,575 INFO sqlalchemy.engine.Engine [cached since 0.0139s ago] (1, 'water')
+[cached since 0.0139s ago] (1, 'water')
+2026-07-28 12:24:28,582 INFO sqlalchemy.engine.Engine SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+2026-07-28 12:24:28,586 INFO sqlalchemy.engine.Engine [cached since 0.02499s ago] (2, 'food')
+[cached since 0.02499s ago] (2, 'food')
+2026-07-28 12:24:28,592 INFO sqlalchemy.engine.Engine SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+2026-07-28 12:24:28,592 INFO sqlalchemy.engine.Engine [cached since 0.0309s ago] (2, 'water')
+[cached since 0.0309s ago] (2, 'water')
+2026-07-28 12:24:28,603 INFO sqlalchemy.engine.Engine SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+2026-07-28 12:24:28,603 INFO sqlalchemy.engine.Engine [cached since 0.04256s ago] (3, 'food')
+[cached since 0.04256s ago] (3, 'food')
+2026-07-28 12:24:28,611 INFO sqlalchemy.engine.Engine SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+2026-07-28 12:24:28,618 INFO sqlalchemy.engine.Engine [cached since 0.05668s ago] (3, 'water')
+[cached since 0.05668s ago] (3, 'water')
+2026-07-28 12:24:28,627 INFO sqlalchemy.engine.Engine SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+2026-07-28 12:24:28,641 INFO sqlalchemy.engine.Engine [cached since 0.07894s ago] (4, 'food')
+[cached since 0.07894s ago] (4, 'food')
+2026-07-28 12:24:28,709 INFO sqlalchemy.engine.Engine SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+2026-07-28 12:24:28,710 INFO sqlalchemy.engine.Engine [cached since 0.1479s ago] (4, 'water')
+[cached since 0.1479s ago] (4, 'water')
+2026-07-28 12:24:28,714 INFO sqlalchemy.engine.Engine SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+2026-07-28 12:24:28,716 INFO sqlalchemy.engine.Engine [cached since 0.1551s ago] (5, 'food')
+[cached since 0.1551s ago] (5, 'food')
+2026-07-28 12:24:28,741 INFO sqlalchemy.engine.Engine SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+2026-07-28 12:24:28,745 INFO sqlalchemy.engine.Engine [cached since 0.1829s ago] (5, 'water')
+[cached since 0.1829s ago] (5, 'water')
+2026-07-28 12:24:28,748 INFO sqlalchemy.engine.Engine SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+2026-07-28 12:24:28,751 INFO sqlalchemy.engine.Engine [cached since 0.1895s ago] (6, 'food')
+[cached since 0.1895s ago] (6, 'food')
+2026-07-28 12:24:28,756 INFO sqlalchemy.engine.Engine SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+2026-07-28 12:24:28,756 INFO sqlalchemy.engine.Engine [cached since 0.1955s ago] (6, 'water')
+[cached since 0.1955s ago] (6, 'water')
+2026-07-28 12:24:28,761 INFO sqlalchemy.engine.Engine SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+2026-07-28 12:24:28,762 INFO sqlalchemy.engine.Engine [cached since 0.2002s ago] (7, 'food')
+[cached since 0.2002s ago] (7, 'food')
+2026-07-28 12:24:28,766 INFO sqlalchemy.engine.Engine SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+2026-07-28 12:24:28,766 INFO sqlalchemy.engine.Engine [cached since 0.2061s ago] (7, 'water')
+[cached since 0.2061s ago] (7, 'water')
+2026-07-28 12:24:28,774 INFO sqlalchemy.engine.Engine SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+2026-07-28 12:24:28,774 INFO sqlalchemy.engine.Engine [cached since 0.2132s ago] (8, 'food')
+[cached since 0.2132s ago] (8, 'food')
+2026-07-28 12:24:28,778 INFO sqlalchemy.engine.Engine SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+2026-07-28 12:24:28,778 INFO sqlalchemy.engine.Engine [cached since 0.2167s ago] (8, 'water')
+[cached since 0.2167s ago] (8, 'water')
+2026-07-28 12:24:28,784 INFO sqlalchemy.engine.Engine SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+2026-07-28 12:24:28,784 INFO sqlalchemy.engine.Engine [cached since 0.2228s ago] (9, 'food')
+[cached since 0.2228s ago] (9, 'food')
+2026-07-28 12:24:28,789 INFO sqlalchemy.engine.Engine SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+2026-07-28 12:24:28,789 INFO sqlalchemy.engine.Engine [cached since 0.2288s ago] (9, 'water')
+[cached since 0.2288s ago] (9, 'water')
+2026-07-28 12:24:28,791 INFO sqlalchemy.engine.Engine SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+2026-07-28 12:24:28,794 INFO sqlalchemy.engine.Engine [cached since 0.2317s ago] (10, 'food')
+[cached since 0.2317s ago] (10, 'food')
+2026-07-28 12:24:28,803 INFO sqlalchemy.engine.Engine SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+2026-07-28 12:24:28,803 INFO sqlalchemy.engine.Engine [cached since 0.2411s ago] (10, 'water')
+[cached since 0.2411s ago] (10, 'water')
+2026-07-28 12:24:28,806 INFO sqlalchemy.engine.Engine SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+2026-07-28 12:24:28,806 INFO sqlalchemy.engine.Engine [cached since 0.2476s ago] (11, 'food')
+[cached since 0.2476s ago] (11, 'food')
+2026-07-28 12:24:28,811 INFO sqlalchemy.engine.Engine SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+2026-07-28 12:24:28,813 INFO sqlalchemy.engine.Engine [cached since 0.251s ago] (11, 'water')
+[cached since 0.251s ago] (11, 'water')
+2026-07-28 12:24:28,818 INFO sqlalchemy.engine.Engine SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+2026-07-28 12:24:28,818 INFO sqlalchemy.engine.Engine [cached since 0.2574s ago] (12, 'food')
+[cached since 0.2574s ago] (12, 'food')
+2026-07-28 12:24:28,823 INFO sqlalchemy.engine.Engine SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+2026-07-28 12:24:28,824 INFO sqlalchemy.engine.Engine [cached since 0.2625s ago] (12, 'water')
+[cached since 0.2625s ago] (12, 'water')
+2026-07-28 12:24:28,827 INFO sqlalchemy.engine.Engine SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+2026-07-28 12:24:28,827 INFO sqlalchemy.engine.Engine [cached since 0.2661s ago] (13, 'food')
+[cached since 0.2661s ago] (13, 'food')
+2026-07-28 12:24:28,836 INFO sqlalchemy.engine.Engine SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+2026-07-28 12:24:28,836 INFO sqlalchemy.engine.Engine [cached since 0.275s ago] (13, 'water')
+[cached since 0.275s ago] (13, 'water')
+2026-07-28 12:24:28,840 INFO sqlalchemy.engine.Engine SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+2026-07-28 12:24:28,840 INFO sqlalchemy.engine.Engine [cached since 0.2789s ago] (14, 'food')
+[cached since 0.2789s ago] (14, 'food')
+2026-07-28 12:24:28,844 INFO sqlalchemy.engine.Engine SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+2026-07-28 12:24:28,844 INFO sqlalchemy.engine.Engine [cached since 0.2822s ago] (14, 'water')
+[cached since 0.2822s ago] (14, 'water')
+2026-07-28 12:24:28,852 INFO sqlalchemy.engine.Engine UPDATE countries SET population=?, approval=?, updated_at=CURRENT_TIMESTAMP WHERE countries.id = ?
+UPDATE countries SET population=?, approval=?, updated_at=CURRENT_TIMESTAMP WHERE countries.id = ?
+2026-07-28 12:24:28,852 INFO sqlalchemy.engine.Engine [generated in 0.00074s] [(84915000, 49.0, 1), (124875000, 49.0, 2), (82917000, 49.0, 3), (214785000, 49.0, 4), (329670000, 49.0, 5), (1398600000, 49.0, 6), (144855000, 49.0, 7), (1398600000, 49.0, 8)  ... displaying 10 of 14 total bound parameter sets ...  (25974000, 49.0, 13), (37962000, 49.0, 14)]
+[generated in 0.00074s] [(84915000, 49.0, 1), (124875000, 49.0, 2), (82917000, 49.0, 3), (214785000, 49.0, 4), (329670000, 49.0, 5), (1398600000, 49.0, 6), (144855000, 49.0, 7), (1398600000, 49.0, 8)  ... displaying 10 of 14 total bound parameter sets ...  (25974000, 49.0, 13), (37962000, 49.0, 14)]
+2026-07-28 12:24:28,859 INFO sqlalchemy.engine.Engine COMMIT
+COMMIT
+2026-07-28 12:24:28,862 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+BEGIN (implicit)
+2026-07-28 12:24:28,869 INFO sqlalchemy.engine.Engine SELECT research_nodes.id, research_nodes.world_id, research_nodes.country_id, research_nodes."key", research_nodes.status, research_nodes.progress, research_nodes.started_at, research_nodes.completes_at, research_nodes.created_at, research_nodes.updated_at
+FROM research_nodes
+WHERE research_nodes.world_id = ? AND research_nodes.status = ? AND research_nodes.completes_at <= ?
+SELECT research_nodes.id, research_nodes.world_id, research_nodes.country_id, research_nodes."key", research_nodes.status, research_nodes.progress, research_nodes.started_at, research_nodes.completes_at, research_nodes.created_at, research_nodes.updated_at
+FROM research_nodes
+WHERE research_nodes.world_id = ? AND research_nodes.status = ? AND research_nodes.completes_at <= ?
+2026-07-28 12:24:28,870 INFO sqlalchemy.engine.Engine [generated in 0.00134s] (1, 'in_progress', '2026-07-28 08:54:28.862241')
+[generated in 0.00134s] (1, 'in_progress', '2026-07-28 08:54:28.862241')
+2026-07-28 12:24:28,874 INFO sqlalchemy.engine.Engine COMMIT
+COMMIT
+2026-07-28 12:24:29,265 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+BEGIN (implicit)
+2026-07-28 12:24:29,265 INFO sqlalchemy.engine.Engine SELECT countries.id, countries.world_id, countries.player_id, countries.code, countries.name, countries.flag_emoji, countries.government, countries.population, countries.treasury, countries.debt, countries.approval, countries.stability, countries.corruption, countries.education, countries.healthcare, countries.electricity_balance, countries.water_balance, countries.housing_capacity, countries.pollution, countries.research_points, countries.meta, countries.created_at, countries.updated_at, countries.deleted_at
+FROM countries
+WHERE countries.world_id = ?
+SELECT countries.id, countries.world_id, countries.player_id, countries.code, countries.name, countries.flag_emoji, countries.government, countries.population, countries.treasury, countries.debt, countries.approval, countries.stability, countries.corruption, countries.education, countries.healthcare, countries.electricity_balance, countries.water_balance, countries.housing_capacity, countries.pollution, countries.research_points, countries.meta, countries.created_at, countries.updated_at, countries.deleted_at
+FROM countries
+WHERE countries.world_id = ?
+2026-07-28 12:24:29,265 INFO sqlalchemy.engine.Engine [cached since 0.7281s ago] (1,)
+[cached since 0.7281s ago] (1,)
+2026-07-28 12:24:29,277 INFO sqlalchemy.engine.Engine SELECT missions.id, missions.world_id, missions.country_id, missions."key", missions.category, missions.status, missions.progress, missions.claim_data, missions.claimed_at, missions.expires_at, missions.created_at, missions.updated_at
+FROM missions
+WHERE missions.country_id = ?
+SELECT missions.id, missions.world_id, missions.country_id, missions."key", missions.category, missions.status, missions.progress, missions.claim_data, missions.claimed_at, missions.expires_at, missions.created_at, missions.updated_at
+FROM missions
+WHERE missions.country_id = ?
+2026-07-28 12:24:29,277 INFO sqlalchemy.engine.Engine [generated in 0.00077s] (1,)
+[generated in 0.00077s] (1,)
+2026-07-28 12:24:29,289 INFO sqlalchemy.engine.Engine SELECT missions.id, missions.world_id, missions.country_id, missions."key", missions.category, missions.status, missions.progress, missions.claim_data, missions.claimed_at, missions.expires_at, missions.created_at, missions.updated_at
+FROM missions
+WHERE missions.country_id = ?
+SELECT missions.id, missions.world_id, missions.country_id, missions."key", missions.category, missions.status, missions.progress, missions.claim_data, missions.claimed_at, missions.expires_at, missions.created_at, missions.updated_at
+FROM missions
+WHERE missions.country_id = ?
+2026-07-28 12:24:29,289 INFO sqlalchemy.engine.Engine [cached since 0.01211s ago] (2,)
+[cached since 0.01211s ago] (2,)
+2026-07-28 12:24:29,293 INFO sqlalchemy.engine.Engine SELECT missions.id, missions.world_id, missions.country_id, missions."key", missions.category, missions.status, missions.progress, missions.claim_data, missions.claimed_at, missions.expires_at, missions.created_at, missions.updated_at
+FROM missions
+WHERE missions.country_id = ?
+SELECT missions.id, missions.world_id, missions.country_id, missions."key", missions.category, missions.status, missions.progress, missions.claim_data, missions.claimed_at, missions.expires_at, missions.created_at, missions.updated_at
+FROM missions
+WHERE missions.country_id = ?
+2026-07-28 12:24:29,293 INFO sqlalchemy.engine.Engine [cached since 0.01551s ago] (3,)
+[cached since 0.01551s ago] (3,)
+2026-07-28 12:24:29,301 INFO sqlalchemy.engine.Engine SELECT missions.id, missions.world_id, missions.country_id, missions."key", missions.category, missions.status, missions.progress, missions.claim_data, missions.claimed_at, missions.expires_at, missions.created_at, missions.updated_at
+FROM missions
+WHERE missions.country_id = ?
+SELECT missions.id, missions.world_id, missions.country_id, missions."key", missions.category, missions.status, missions.progress, missions.claim_data, missions.claimed_at, missions.expires_at, missions.created_at, missions.updated_at
+FROM missions
+WHERE missions.country_id = ?
+2026-07-28 12:24:29,301 INFO sqlalchemy.engine.Engine [cached since 0.02378s ago] (4,)
+[cached since 0.02378s ago] (4,)
+2026-07-28 12:24:29,301 INFO sqlalchemy.engine.Engine SELECT missions.id, missions.world_id, missions.country_id, missions."key", missions.category, missions.status, missions.progress, missions.claim_data, missions.claimed_at, missions.expires_at, missions.created_at, missions.updated_at
+FROM missions
+WHERE missions.country_id = ?
+SELECT missions.id, missions.world_id, missions.country_id, missions."key", missions.category, missions.status, missions.progress, missions.claim_data, missions.claimed_at, missions.expires_at, missions.created_at, missions.updated_at
+FROM missions
+WHERE missions.country_id = ?
+2026-07-28 12:24:29,301 INFO sqlalchemy.engine.Engine [cached since 0.02879s ago] (5,)
+[cached since 0.02879s ago] (5,)
+2026-07-28 12:24:29,309 INFO sqlalchemy.engine.Engine SELECT missions.id, missions.world_id, missions.country_id, missions."key", missions.category, missions.status, missions.progress, missions.claim_data, missions.claimed_at, missions.expires_at, missions.created_at, missions.updated_at
+FROM missions
+WHERE missions.country_id = ?
+SELECT missions.id, missions.world_id, missions.country_id, missions."key", missions.category, missions.status, missions.progress, missions.claim_data, missions.claimed_at, missions.expires_at, missions.created_at, missions.updated_at
+FROM missions
+WHERE missions.country_id = ?
+2026-07-28 12:24:29,309 INFO sqlalchemy.engine.Engine [cached since 0.03205s ago] (6,)
+[cached since 0.03205s ago] (6,)
+2026-07-28 12:24:29,313 INFO sqlalchemy.engine.Engine SELECT missions.id, missions.world_id, missions.country_id, missions."key", missions.category, missions.status, missions.progress, missions.claim_data, missions.claimed_at, missions.expires_at, missions.created_at, missions.updated_at
+FROM missions
+WHERE missions.country_id = ?
+SELECT missions.id, missions.world_id, missions.country_id, missions."key", missions.category, missions.status, missions.progress, missions.claim_data, missions.claimed_at, missions.expires_at, missions.created_at, missions.updated_at
+FROM missions
+WHERE missions.country_id = ?
+2026-07-28 12:24:29,313 INFO sqlalchemy.engine.Engine [cached since 0.0365s ago] (7,)
+[cached since 0.0365s ago] (7,)
+2026-07-28 12:24:29,318 INFO sqlalchemy.engine.Engine SELECT missions.id, missions.world_id, missions.country_id, missions."key", missions.category, missions.status, missions.progress, missions.claim_data, missions.claimed_at, missions.expires_at, missions.created_at, missions.updated_at
+FROM missions
+WHERE missions.country_id = ?
+SELECT missions.id, missions.world_id, missions.country_id, missions."key", missions.category, missions.status, missions.progress, missions.claim_data, missions.claimed_at, missions.expires_at, missions.created_at, missions.updated_at
+FROM missions
+WHERE missions.country_id = ?
+2026-07-28 12:24:29,318 INFO sqlalchemy.engine.Engine [cached since 0.04332s ago] (8,)
+[cached since 0.04332s ago] (8,)
+2026-07-28 12:24:29,323 INFO sqlalchemy.engine.Engine SELECT missions.id, missions.world_id, missions.country_id, missions."key", missions.category, missions.status, missions.progress, missions.claim_data, missions.claimed_at, missions.expires_at, missions.created_at, missions.updated_at
+FROM missions
+WHERE missions.country_id = ?
+SELECT missions.id, missions.world_id, missions.country_id, missions."key", missions.category, missions.status, missions.progress, missions.claim_data, missions.claimed_at, missions.expires_at, missions.created_at, missions.updated_at
+FROM missions
+WHERE missions.country_id = ?
+2026-07-28 12:24:29,324 INFO sqlalchemy.engine.Engine [cached since 0.04687s ago] (9,)
+[cached since 0.04687s ago] (9,)
+2026-07-28 12:24:29,327 INFO sqlalchemy.engine.Engine SELECT missions.id, missions.world_id, missions.country_id, missions."key", missions.category, missions.status, missions.progress, missions.claim_data, missions.claimed_at, missions.expires_at, missions.created_at, missions.updated_at
+FROM missions
+WHERE missions.country_id = ?
+SELECT missions.id, missions.world_id, missions.country_id, missions."key", missions.category, missions.status, missions.progress, missions.claim_data, missions.claimed_at, missions.expires_at, missions.created_at, missions.updated_at
+FROM missions
+WHERE missions.country_id = ?
+2026-07-28 12:24:29,327 INFO sqlalchemy.engine.Engine [cached since 0.05036s ago] (10,)
+[cached since 0.05036s ago] (10,)
+2026-07-28 12:24:29,332 INFO sqlalchemy.engine.Engine SELECT missions.id, missions.world_id, missions.country_id, missions."key", missions.category, missions.status, missions.progress, missions.claim_data, missions.claimed_at, missions.expires_at, missions.created_at, missions.updated_at
+FROM missions
+WHERE missions.country_id = ?
+SELECT missions.id, missions.world_id, missions.country_id, missions."key", missions.category, missions.status, missions.progress, missions.claim_data, missions.claimed_at, missions.expires_at, missions.created_at, missions.updated_at
+FROM missions
+WHERE missions.country_id = ?
+2026-07-28 12:24:29,332 INFO sqlalchemy.engine.Engine [cached since 0.05672s ago] (11,)
+[cached since 0.05672s ago] (11,)
+2026-07-28 12:24:29,339 INFO sqlalchemy.engine.Engine SELECT missions.id, missions.world_id, missions.country_id, missions."key", missions.category, missions.status, missions.progress, missions.claim_data, missions.claimed_at, missions.expires_at, missions.created_at, missions.updated_at
+FROM missions
+WHERE missions.country_id = ?
+SELECT missions.id, missions.world_id, missions.country_id, missions."key", missions.category, missions.status, missions.progress, missions.claim_data, missions.claimed_at, missions.expires_at, missions.created_at, missions.updated_at
+FROM missions
+WHERE missions.country_id = ?
+2026-07-28 12:24:29,339 INFO sqlalchemy.engine.Engine [cached since 0.0626s ago] (12,)
+[cached since 0.0626s ago] (12,)
+2026-07-28 12:24:29,343 INFO sqlalchemy.engine.Engine SELECT missions.id, missions.world_id, missions.country_id, missions."key", missions.category, missions.status, missions.progress, missions.claim_data, missions.claimed_at, missions.expires_at, missions.created_at, missions.updated_at
+FROM missions
+WHERE missions.country_id = ?
+SELECT missions.id, missions.world_id, missions.country_id, missions."key", missions.category, missions.status, missions.progress, missions.claim_data, missions.claimed_at, missions.expires_at, missions.created_at, missions.updated_at
+FROM missions
+WHERE missions.country_id = ?
+2026-07-28 12:24:29,344 INFO sqlalchemy.engine.Engine [cached since 0.06619s ago] (13,)
+[cached since 0.06619s ago] (13,)
+2026-07-28 12:24:29,349 INFO sqlalchemy.engine.Engine SELECT missions.id, missions.world_id, missions.country_id, missions."key", missions.category, missions.status, missions.progress, missions.claim_data, missions.claimed_at, missions.expires_at, missions.created_at, missions.updated_at
+FROM missions
+WHERE missions.country_id = ?
+SELECT missions.id, missions.world_id, missions.country_id, missions."key", missions.category, missions.status, missions.progress, missions.claim_data, missions.claimed_at, missions.expires_at, missions.created_at, missions.updated_at
+FROM missions
+WHERE missions.country_id = ?
+2026-07-28 12:24:29,349 INFO sqlalchemy.engine.Engine [cached since 0.07386s ago] (14,)
+[cached since 0.07386s ago] (14,)
+2026-07-28 12:24:29,355 INFO sqlalchemy.engine.Engine COMMIT
+COMMIT
+2026-07-28 12:24:29,359 INFO sqlalchemy.engine.Engine UPDATE worlds SET tick_count=(worlds.tick_count + ?), last_tick_at=?, updated_at=CURRENT_TIMESTAMP WHERE worlds.id IN (?)
+UPDATE worlds SET tick_count=(worlds.tick_count + ?), last_tick_at=?, updated_at=CURRENT_TIMESTAMP WHERE worlds.id IN (?)
+2026-07-28 12:24:29,359 INFO sqlalchemy.engine.Engine [generated in 0.00065s] (1, '2026-07-28 08:54:29.357583', 1)
+[generated in 0.00065s] (1, '2026-07-28 08:54:29.357583', 1)
+2026-07-28 12:24:29,367 INFO sqlalchemy.engine.Engine COMMIT
+COMMIT
+2026-07-28T08:54:31.476027Z [warning  ] api.redis.unavailable          error=
+2026-07-28T08:54:31.591941Z [info     ] i18n.loaded                    locales=['en', 'fa']
+Application startup complete.
+Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+2026-07-28 12:25:29,373 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+BEGIN (implicit)
+2026-07-28 12:25:29,376 INFO sqlalchemy.engine.Engine SELECT worlds.id, worlds.name, worlds.slug, worlds.status, worlds.player_capacity, worlds.player_count, worlds.tick_count, worlds.last_tick_at, worlds.meta, worlds.created_at, worlds.updated_at, worlds.deleted_at
+FROM worlds
+WHERE worlds.status IN (?, ?) AND worlds.deleted_at IS NULL ORDER BY worlds.id
+SELECT worlds.id, worlds.name, worlds.slug, worlds.status, worlds.player_capacity, worlds.player_count, worlds.tick_count, worlds.last_tick_at, worlds.meta, worlds.created_at, worlds.updated_at, worlds.deleted_at
+FROM worlds
+WHERE worlds.status IN (?, ?) AND worlds.deleted_at IS NULL ORDER BY worlds.id
+2026-07-28 12:25:29,379 INFO sqlalchemy.engine.Engine [cached since 61.71s ago] ('open', 'full')
+[cached since 61.71s ago] ('open', 'full')
+2026-07-28 12:25:29,394 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+BEGIN (implicit)
+2026-07-28 12:25:29,398 INFO sqlalchemy.engine.Engine SELECT buildings.id, buildings.world_id, buildings.country_id, buildings."key", buildings.level, buildings.status, buildings.position_x, buildings.position_y, buildings.started_at, buildings.completes_at, buildings.produced_total, buildings.created_at, buildings.updated_at
+FROM buildings
+WHERE buildings.status = ? AND buildings.completes_at <= ?
+SELECT buildings.id, buildings.world_id, buildings.country_id, buildings."key", buildings.level, buildings.status, buildings.position_x, buildings.position_y, buildings.started_at, buildings.completes_at, buildings.produced_total, buildings.created_at, buildings.updated_at
+FROM buildings
+WHERE buildings.status = ? AND buildings.completes_at <= ?
+2026-07-28 12:25:29,398 INFO sqlalchemy.engine.Engine [cached since 60.91s ago] ('under_construction', '2026-07-28 08:55:29.392161')
+[cached since 60.91s ago] ('under_construction', '2026-07-28 08:55:29.392161')
+2026-07-28 12:25:29,413 INFO sqlalchemy.engine.Engine SELECT buildings.id, buildings.world_id, buildings.country_id, buildings."key", buildings.level, buildings.status, buildings.position_x, buildings.position_y, buildings.started_at, buildings.completes_at, buildings.produced_total, buildings.created_at, buildings.updated_at, countries.id AS id_1, countries.world_id AS world_id_1, countries.player_id, countries.code, countries.name, countries.flag_emoji, countries.government, countries.population, countries.treasury, countries.debt, countries.approval, countries.stability, countries.corruption, countries.education, countries.healthcare, countries.electricity_balance, countries.water_balance, countries.housing_capacity, countries.pollution, countries.research_points, countries.meta, countries.created_at AS created_at_1, countries.updated_at AS updated_at_1, countries.deleted_at
+FROM buildings JOIN countries ON countries.id = buildings.country_id
+WHERE buildings.world_id = ? AND buildings.status = ? AND countries.world_id = ?
+SELECT buildings.id, buildings.world_id, buildings.country_id, buildings."key", buildings.level, buildings.status, buildings.position_x, buildings.position_y, buildings.started_at, buildings.completes_at, buildings.produced_total, buildings.created_at, buildings.updated_at, countries.id AS id_1, countries.world_id AS world_id_1, countries.player_id, countries.code, countries.name, countries.flag_emoji, countries.government, countries.population, countries.treasury, countries.debt, countries.approval, countries.stability, countries.corruption, countries.education, countries.healthcare, countries.electricity_balance, countries.water_balance, countries.housing_capacity, countries.pollution, countries.research_points, countries.meta, countries.created_at AS created_at_1, countries.updated_at AS updated_at_1, countries.deleted_at
+FROM buildings JOIN countries ON countries.id = buildings.country_id
+WHERE buildings.world_id = ? AND buildings.status = ? AND countries.world_id = ?
+2026-07-28 12:25:29,418 INFO sqlalchemy.engine.Engine [cached since 60.91s ago] (1, 'active', 1)
+[cached since 60.91s ago] (1, 'active', 1)
+2026-07-28 12:25:29,427 INFO sqlalchemy.engine.Engine COMMIT
+COMMIT
+2026-07-28 12:25:29,437 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+BEGIN (implicit)
+2026-07-28 12:25:29,439 INFO sqlalchemy.engine.Engine SELECT buildings.id, buildings.world_id, buildings.country_id, buildings."key", buildings.level, buildings.status, buildings.position_x, buildings.position_y, buildings.started_at, buildings.completes_at, buildings.produced_total, buildings.created_at, buildings.updated_at
+FROM buildings
+WHERE buildings.world_id = ? AND buildings."key" = ?
+SELECT buildings.id, buildings.world_id, buildings.country_id, buildings."key", buildings.level, buildings.status, buildings.position_x, buildings.position_y, buildings.started_at, buildings.completes_at, buildings.produced_total, buildings.created_at, buildings.updated_at
+FROM buildings
+WHERE buildings.world_id = ? AND buildings."key" = ?
+2026-07-28 12:25:29,439 INFO sqlalchemy.engine.Engine [cached since 60.92s ago] (1, 'fusion_reactor')
+[cached since 60.92s ago] (1, 'fusion_reactor')
+2026-07-28 12:25:29,456 INFO sqlalchemy.engine.Engine COMMIT
+COMMIT
+2026-07-28T08:55:29.463564Z [info     ] space_race.tick.bonus          bonus=1.0 reactors=0 world_id=1
+2026-07-28 12:25:29,468 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+BEGIN (implicit)
+2026-07-28 12:25:29,470 INFO sqlalchemy.engine.Engine SELECT countries.id, countries.world_id, countries.player_id, countries.code, countries.name, countries.flag_emoji, countries.government, countries.population, countries.treasury, countries.debt, countries.approval, countries.stability, countries.corruption, countries.education, countries.healthcare, countries.electricity_balance, countries.water_balance, countries.housing_capacity, countries.pollution, countries.research_points, countries.meta, countries.created_at, countries.updated_at, countries.deleted_at
+FROM countries
+WHERE countries.world_id = ?
+SELECT countries.id, countries.world_id, countries.player_id, countries.code, countries.name, countries.flag_emoji, countries.government, countries.population, countries.treasury, countries.debt, countries.approval, countries.stability, countries.corruption, countries.education, countries.healthcare, countries.electricity_balance, countries.water_balance, countries.housing_capacity, countries.pollution, countries.research_points, countries.meta, countries.created_at, countries.updated_at, countries.deleted_at
+FROM countries
+WHERE countries.world_id = ?
+2026-07-28 12:25:29,472 INFO sqlalchemy.engine.Engine [cached since 60.93s ago] (1,)
+[cached since 60.93s ago] (1,)
+2026-07-28 12:25:29,487 INFO sqlalchemy.engine.Engine SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+2026-07-28 12:25:29,487 INFO sqlalchemy.engine.Engine [cached since 60.93s ago] (1, 'food')
+[cached since 60.93s ago] (1, 'food')
+2026-07-28 12:25:29,506 INFO sqlalchemy.engine.Engine SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+2026-07-28 12:25:29,508 INFO sqlalchemy.engine.Engine [cached since 60.95s ago] (1, 'water')
+[cached since 60.95s ago] (1, 'water')
+2026-07-28 12:25:29,526 INFO sqlalchemy.engine.Engine SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+2026-07-28 12:25:29,530 INFO sqlalchemy.engine.Engine [cached since 60.97s ago] (2, 'food')
+[cached since 60.97s ago] (2, 'food')
+2026-07-28 12:25:29,539 INFO sqlalchemy.engine.Engine SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+2026-07-28 12:25:29,539 INFO sqlalchemy.engine.Engine [cached since 60.98s ago] (2, 'water')
+[cached since 60.98s ago] (2, 'water')
+2026-07-28 12:25:29,549 INFO sqlalchemy.engine.Engine SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+2026-07-28 12:25:29,549 INFO sqlalchemy.engine.Engine [cached since 60.99s ago] (3, 'food')
+[cached since 60.99s ago] (3, 'food')
+2026-07-28 12:25:29,554 INFO sqlalchemy.engine.Engine SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+2026-07-28 12:25:29,554 INFO sqlalchemy.engine.Engine [cached since 60.99s ago] (3, 'water')
+[cached since 60.99s ago] (3, 'water')
+2026-07-28 12:25:29,560 INFO sqlalchemy.engine.Engine SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+2026-07-28 12:25:29,563 INFO sqlalchemy.engine.Engine [cached since 61s ago] (4, 'food')
+[cached since 61s ago] (4, 'food')
+2026-07-28 12:25:29,570 INFO sqlalchemy.engine.Engine SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+2026-07-28 12:25:29,570 INFO sqlalchemy.engine.Engine [cached since 61.01s ago] (4, 'water')
+[cached since 61.01s ago] (4, 'water')
+2026-07-28 12:25:29,573 INFO sqlalchemy.engine.Engine SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+2026-07-28 12:25:29,573 INFO sqlalchemy.engine.Engine [cached since 61.01s ago] (5, 'food')
+[cached since 61.01s ago] (5, 'food')
+2026-07-28 12:25:29,585 INFO sqlalchemy.engine.Engine SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+2026-07-28 12:25:29,587 INFO sqlalchemy.engine.Engine [cached since 61.02s ago] (5, 'water')
+[cached since 61.02s ago] (5, 'water')
+2026-07-28 12:25:29,591 INFO sqlalchemy.engine.Engine SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+2026-07-28 12:25:29,597 INFO sqlalchemy.engine.Engine [cached since 61.04s ago] (6, 'food')
+[cached since 61.04s ago] (6, 'food')
+2026-07-28 12:25:29,603 INFO sqlalchemy.engine.Engine SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+2026-07-28 12:25:29,603 INFO sqlalchemy.engine.Engine [cached since 61.04s ago] (6, 'water')
+[cached since 61.04s ago] (6, 'water')
+2026-07-28 12:25:29,607 INFO sqlalchemy.engine.Engine SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+2026-07-28 12:25:29,607 INFO sqlalchemy.engine.Engine [cached since 61.05s ago] (7, 'food')
+[cached since 61.05s ago] (7, 'food')
+2026-07-28 12:25:29,612 INFO sqlalchemy.engine.Engine SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+2026-07-28 12:25:29,612 INFO sqlalchemy.engine.Engine [cached since 61.05s ago] (7, 'water')
+[cached since 61.05s ago] (7, 'water')
+2026-07-28 12:25:29,619 INFO sqlalchemy.engine.Engine SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+2026-07-28 12:25:29,619 INFO sqlalchemy.engine.Engine [cached since 61.06s ago] (8, 'food')
+[cached since 61.06s ago] (8, 'food')
+2026-07-28 12:25:29,623 INFO sqlalchemy.engine.Engine SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+2026-07-28 12:25:29,623 INFO sqlalchemy.engine.Engine [cached since 61.06s ago] (8, 'water')
+[cached since 61.06s ago] (8, 'water')
+2026-07-28 12:25:29,631 INFO sqlalchemy.engine.Engine SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+2026-07-28 12:25:29,633 INFO sqlalchemy.engine.Engine [cached since 61.07s ago] (9, 'food')
+[cached since 61.07s ago] (9, 'food')
+2026-07-28 12:25:29,638 INFO sqlalchemy.engine.Engine SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+2026-07-28 12:25:29,639 INFO sqlalchemy.engine.Engine [cached since 61.08s ago] (9, 'water')
+[cached since 61.08s ago] (9, 'water')
+2026-07-28 12:25:29,642 INFO sqlalchemy.engine.Engine SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+2026-07-28 12:25:29,644 INFO sqlalchemy.engine.Engine [cached since 61.08s ago] (10, 'food')
+[cached since 61.08s ago] (10, 'food')
+2026-07-28 12:25:29,650 INFO sqlalchemy.engine.Engine SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+2026-07-28 12:25:29,650 INFO sqlalchemy.engine.Engine [cached since 61.09s ago] (10, 'water')
+[cached since 61.09s ago] (10, 'water')
+2026-07-28 12:25:29,658 INFO sqlalchemy.engine.Engine SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+2026-07-28 12:25:29,658 INFO sqlalchemy.engine.Engine [cached since 61.1s ago] (11, 'food')
+[cached since 61.1s ago] (11, 'food')
+2026-07-28 12:25:29,670 INFO sqlalchemy.engine.Engine SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+2026-07-28 12:25:29,670 INFO sqlalchemy.engine.Engine [cached since 61.11s ago] (11, 'water')
+[cached since 61.11s ago] (11, 'water')
+2026-07-28 12:25:29,676 INFO sqlalchemy.engine.Engine SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+2026-07-28 12:25:29,678 INFO sqlalchemy.engine.Engine [cached since 61.12s ago] (12, 'food')
+[cached since 61.12s ago] (12, 'food')
+2026-07-28 12:25:29,688 INFO sqlalchemy.engine.Engine SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+2026-07-28 12:25:29,689 INFO sqlalchemy.engine.Engine [cached since 61.13s ago] (12, 'water')
+[cached since 61.13s ago] (12, 'water')
+2026-07-28 12:25:29,704 INFO sqlalchemy.engine.Engine SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+2026-07-28 12:25:29,704 INFO sqlalchemy.engine.Engine [cached since 61.14s ago] (13, 'food')
+[cached since 61.14s ago] (13, 'food')
+2026-07-28 12:25:29,721 INFO sqlalchemy.engine.Engine SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+2026-07-28 12:25:29,721 INFO sqlalchemy.engine.Engine [cached since 61.16s ago] (13, 'water')
+[cached since 61.16s ago] (13, 'water')
+2026-07-28 12:25:29,726 INFO sqlalchemy.engine.Engine SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+2026-07-28 12:25:29,730 INFO sqlalchemy.engine.Engine [cached since 61.17s ago] (14, 'food')
+[cached since 61.17s ago] (14, 'food')
+2026-07-28 12:25:29,737 INFO sqlalchemy.engine.Engine SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+SELECT resource_stocks.amount
+FROM resource_stocks
+WHERE resource_stocks.country_id = ? AND resource_stocks."key" = ?
+2026-07-28 12:25:29,737 INFO sqlalchemy.engine.Engine [cached since 61.18s ago] (14, 'water')
+[cached since 61.18s ago] (14, 'water')
+2026-07-28 12:25:29,743 INFO sqlalchemy.engine.Engine UPDATE countries SET population=?, approval=?, updated_at=CURRENT_TIMESTAMP WHERE countries.id = ?
+UPDATE countries SET population=?, approval=?, updated_at=CURRENT_TIMESTAMP WHERE countries.id = ?
+2026-07-28 12:25:29,747 INFO sqlalchemy.engine.Engine [cached since 60.89s ago] [(84745170, 48.0, 1), (124625250, 48.0, 2), (82751166, 48.0, 3), (214355430, 48.0, 4), (329010660, 48.0, 5), (1395802800, 48.0, 6), (144565290, 48.0, 7), (1395802800, 48.0, 8)  ... displaying 10 of 14 total bound parameter sets ...  (25922052, 48.0, 13), (37886076, 48.0, 14)]
+[cached since 60.89s ago] [(84745170, 48.0, 1), (124625250, 48.0, 2), (82751166, 48.0, 3), (214355430, 48.0, 4), (329010660, 48.0, 5), (1395802800, 48.0, 6), (144565290, 48.0, 7), (1395802800, 48.0, 8)  ... displaying 10 of 14 total bound parameter sets ...  (25922052, 48.0, 13), (37886076, 48.0, 14)]
+2026-07-28 12:25:29,752 INFO sqlalchemy.engine.Engine COMMIT
+COMMIT
+2026-07-28 12:25:29,757 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+BEGIN (implicit)
+2026-07-28 12:25:29,757 INFO sqlalchemy.engine.Engine SELECT research_nodes.id, research_nodes.world_id, research_nodes.country_id, research_nodes."key", research_nodes.status, research_nodes.progress, research_nodes.started_at, research_nodes.completes_at, research_nodes.created_at, research_nodes.updated_at
+FROM research_nodes
+WHERE research_nodes.world_id = ? AND research_nodes.status = ? AND research_nodes.completes_at <= ?
+SELECT research_nodes.id, research_nodes.world_id, research_nodes.country_id, research_nodes."key", research_nodes.status, research_nodes.progress, research_nodes.started_at, research_nodes.completes_at, research_nodes.created_at, research_nodes.updated_at
+FROM research_nodes
+WHERE research_nodes.world_id = ? AND research_nodes.status = ? AND research_nodes.completes_at <= ?
+2026-07-28 12:25:29,757 INFO sqlalchemy.engine.Engine [cached since 60.89s ago] (1, 'in_progress', '2026-07-28 08:55:29.752858')
+[cached since 60.89s ago] (1, 'in_progress', '2026-07-28 08:55:29.752858')
+2026-07-28 12:25:29,764 INFO sqlalchemy.engine.Engine COMMIT
+COMMIT
+2026-07-28 12:25:29,769 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+BEGIN (implicit)
+2026-07-28 12:25:29,769 INFO sqlalchemy.engine.Engine SELECT countries.id, countries.world_id, countries.player_id, countries.code, countries.name, countries.flag_emoji, countries.government, countries.population, countries.treasury, countries.debt, countries.approval, countries.stability, countries.corruption, countries.education, countries.healthcare, countries.electricity_balance, countries.water_balance, countries.housing_capacity, countries.pollution, countries.research_points, countries.meta, countries.created_at, countries.updated_at, countries.deleted_at
+FROM countries
+WHERE countries.world_id = ?
+SELECT countries.id, countries.world_id, countries.player_id, countries.code, countries.name, countries.flag_emoji, countries.government, countries.population, countries.treasury, countries.debt, countries.approval, countries.stability, countries.corruption, countries.education, countries.healthcare, countries.electricity_balance, countries.water_balance, countries.housing_capacity, countries.pollution, countries.research_points, countries.meta, countries.created_at, countries.updated_at, countries.deleted_at
+FROM countries
+WHERE countries.world_id = ?
+2026-07-28 12:25:29,769 INFO sqlalchemy.engine.Engine [cached since 61.23s ago] (1,)
+[cached since 61.23s ago] (1,)
+2026-07-28 12:25:29,774 INFO sqlalchemy.engine.Engine SELECT missions.id, missions.world_id, missions.country_id, missions."key", missions.category, missions.status, missions.progress, missions.claim_data, missions.claimed_at, missions.expires_at, missions.created_at, missions.updated_at
+FROM missions
+WHERE missions.country_id = ?
+SELECT missions.id, missions.world_id, missions.country_id, missions."key", missions.category, missions.status, missions.progress, missions.claim_data, missions.claimed_at, missions.expires_at, missions.created_at, missions.updated_at
+FROM missions
+WHERE missions.country_id = ?
+2026-07-28 12:25:29,774 INFO sqlalchemy.engine.Engine [cached since 60.5s ago] (1,)
+[cached since 60.5s ago] (1,)
+2026-07-28 12:25:29,782 INFO sqlalchemy.engine.Engine SELECT missions.id, missions.world_id, missions.country_id, missions."key", missions.category, missions.status, missions.progress, missions.claim_data, missions.claimed_at, missions.expires_at, missions.created_at, missions.updated_at
+FROM missions
+WHERE missions.country_id = ?
+SELECT missions.id, missions.world_id, missions.country_id, missions."key", missions.category, missions.status, missions.progress, missions.claim_data, missions.claimed_at, missions.expires_at, missions.created_at, missions.updated_at
+FROM missions
+WHERE missions.country_id = ?
+2026-07-28 12:25:29,786 INFO sqlalchemy.engine.Engine [cached since 60.51s ago] (2,)
+[cached since 60.51s ago] (2,)
+2026-07-28 12:25:29,789 INFO sqlalchemy.engine.Engine SELECT missions.id, missions.world_id, missions.country_id, missions."key", missions.category, missions.status, missions.progress, missions.claim_data, missions.claimed_at, missions.expires_at, missions.created_at, missions.updated_at
+FROM missions
+WHERE missions.country_id = ?
+SELECT missions.id, missions.world_id, missions.country_id, missions."key", missions.category, missions.status, missions.progress, missions.claim_data, missions.claimed_at, missions.expires_at, missions.created_at, missions.updated_at
+FROM missions
+WHERE missions.country_id = ?
+2026-07-28 12:25:29,789 INFO sqlalchemy.engine.Engine [cached since 60.51s ago] (3,)
+[cached since 60.51s ago] (3,)
+2026-07-28 12:25:29,799 INFO sqlalchemy.engine.Engine SELECT missions.id, missions.world_id, missions.country_id, missions."key", missions.category, missions.status, missions.progress, missions.claim_data, missions.claimed_at, missions.expires_at, missions.created_at, missions.updated_at
+FROM missions
+WHERE missions.country_id = ?
+SELECT missions.id, missions.world_id, missions.country_id, missions."key", missions.category, missions.status, missions.progress, missions.claim_data, missions.claimed_at, missions.expires_at, missions.created_at, missions.updated_at
+FROM missions
+WHERE missions.country_id = ?
+2026-07-28 12:25:29,799 INFO sqlalchemy.engine.Engine [cached since 60.52s ago] (4,)
+[cached since 60.52s ago] (4,)
+2026-07-28 12:25:29,802 INFO sqlalchemy.engine.Engine SELECT missions.id, missions.world_id, missions.country_id, missions."key", missions.category, missions.status, missions.progress, missions.claim_data, missions.claimed_at, missions.expires_at, missions.created_at, missions.updated_at
+FROM missions
+WHERE missions.country_id = ?
+SELECT missions.id, missions.world_id, missions.country_id, missions."key", missions.category, missions.status, missions.progress, missions.claim_data, missions.claimed_at, missions.expires_at, missions.created_at, missions.updated_at
+FROM missions
+WHERE missions.country_id = ?
+2026-07-28 12:25:29,802 INFO sqlalchemy.engine.Engine [cached since 60.53s ago] (5,)
+[cached since 60.53s ago] (5,)
+2026-07-28 12:25:29,806 INFO sqlalchemy.engine.Engine SELECT missions.id, missions.world_id, missions.country_id, missions."key", missions.category, missions.status, missions.progress, missions.claim_data, missions.claimed_at, missions.expires_at, missions.created_at, missions.updated_at
+FROM missions
+WHERE missions.country_id = ?
+SELECT missions.id, missions.world_id, missions.country_id, missions."key", missions.category, missions.status, missions.progress, missions.claim_data, missions.claimed_at, missions.expires_at, missions.created_at, missions.updated_at
+FROM missions
+WHERE missions.country_id = ?
+2026-07-28 12:25:29,806 INFO sqlalchemy.engine.Engine [cached since 60.53s ago] (6,)
+[cached since 60.53s ago] (6,)
+2026-07-28 12:25:29,810 INFO sqlalchemy.engine.Engine SELECT missions.id, missions.world_id, missions.country_id, missions."key", missions.category, missions.status, missions.progress, missions.claim_data, missions.claimed_at, missions.expires_at, missions.created_at, missions.updated_at
+FROM missions
+WHERE missions.country_id = ?
+SELECT missions.id, missions.world_id, missions.country_id, missions."key", missions.category, missions.status, missions.progress, missions.claim_data, missions.claimed_at, missions.expires_at, missions.created_at, missions.updated_at
+FROM missions
+WHERE missions.country_id = ?
+2026-07-28 12:25:29,810 INFO sqlalchemy.engine.Engine [cached since 60.53s ago] (7,)
+[cached since 60.53s ago] (7,)
+2026-07-28 12:25:29,818 INFO sqlalchemy.engine.Engine SELECT missions.id, missions.world_id, missions.country_id, missions."key", missions.category, missions.status, missions.progress, missions.claim_data, missions.claimed_at, missions.expires_at, missions.created_at, missions.updated_at
+FROM missions
+WHERE missions.country_id = ?
+SELECT missions.id, missions.world_id, missions.country_id, missions."key", missions.category, missions.status, missions.progress, missions.claim_data, missions.claimed_at, missions.expires_at, missions.created_at, missions.updated_at
+FROM missions
+WHERE missions.country_id = ?
+2026-07-28 12:25:29,818 INFO sqlalchemy.engine.Engine [cached since 60.54s ago] (8,)
+[cached since 60.54s ago] (8,)
+2026-07-28 12:25:29,820 INFO sqlalchemy.engine.Engine SELECT missions.id, missions.world_id, missions.country_id, missions."key", missions.category, missions.status, missions.progress, missions.claim_data, missions.claimed_at, missions.expires_at, missions.created_at, missions.updated_at
+FROM missions
+WHERE missions.country_id = ?
+SELECT missions.id, missions.world_id, missions.country_id, missions."key", missions.category, missions.status, missions.progress, missions.claim_data, missions.claimed_at, missions.expires_at, missions.created_at, missions.updated_at
+FROM missions
+WHERE missions.country_id = ?
+2026-07-28 12:25:29,820 INFO sqlalchemy.engine.Engine [cached since 60.54s ago] (9,)
+[cached since 60.54s ago] (9,)
+2026-07-28 12:25:29,823 INFO sqlalchemy.engine.Engine SELECT missions.id, missions.world_id, missions.country_id, missions."key", missions.category, missions.status, missions.progress, missions.claim_data, missions.claimed_at, missions.expires_at, missions.created_at, missions.updated_at
+FROM missions
+WHERE missions.country_id = ?
+SELECT missions.id, missions.world_id, missions.country_id, missions."key", missions.category, missions.status, missions.progress, missions.claim_data, missions.claimed_at, missions.expires_at, missions.created_at, missions.updated_at
+FROM missions
+WHERE missions.country_id = ?
+2026-07-28 12:25:29,823 INFO sqlalchemy.engine.Engine [cached since 60.55s ago] (10,)
+[cached since 60.55s ago] (10,)
+2026-07-28 12:25:29,825 INFO sqlalchemy.engine.Engine SELECT missions.id, missions.world_id, missions.country_id, missions."key", missions.category, missions.status, missions.progress, missions.claim_data, missions.claimed_at, missions.expires_at, missions.created_at, missions.updated_at
+FROM missions
+WHERE missions.country_id = ?
+SELECT missions.id, missions.world_id, missions.country_id, missions."key", missions.category, missions.status, missions.progress, missions.claim_data, missions.claimed_at, missions.expires_at, missions.created_at, missions.updated_at
+FROM missions
+WHERE missions.country_id = ?
+2026-07-28 12:25:29,825 INFO sqlalchemy.engine.Engine [cached since 60.55s ago] (11,)
+[cached since 60.55s ago] (11,)
+2026-07-28 12:25:29,832 INFO sqlalchemy.engine.Engine SELECT missions.id, missions.world_id, missions.country_id, missions."key", missions.category, missions.status, missions.progress, missions.claim_data, missions.claimed_at, missions.expires_at, missions.created_at, missions.updated_at
+FROM missions
+WHERE missions.country_id = ?
+SELECT missions.id, missions.world_id, missions.country_id, missions."key", missions.category, missions.status, missions.progress, missions.claim_data, missions.claimed_at, missions.expires_at, missions.created_at, missions.updated_at
+FROM missions
+WHERE missions.country_id = ?
+2026-07-28 12:25:29,832 INFO sqlalchemy.engine.Engine [cached since 60.56s ago] (12,)
+[cached since 60.56s ago] (12,)
+2026-07-28 12:25:29,835 INFO sqlalchemy.engine.Engine SELECT missions.id, missions.world_id, missions.country_id, missions."key", missions.category, missions.status, missions.progress, missions.claim_data, missions.claimed_at, missions.expires_at, missions.created_at, missions.updated_at
+FROM missions
+WHERE missions.country_id = ?
+SELECT missions.id, missions.world_id, missions.country_id, missions."key", missions.category, missions.status, missions.progress, missions.claim_data, missions.claimed_at, missions.expires_at, missions.created_at, missions.updated_at
+FROM missions
+WHERE missions.country_id = ?
+2026-07-28 12:25:29,835 INFO sqlalchemy.engine.Engine [cached since 60.56s ago] (13,)
+[cached since 60.56s ago] (13,)
+2026-07-28 12:25:29,838 INFO sqlalchemy.engine.Engine SELECT missions.id, missions.world_id, missions.country_id, missions."key", missions.category, missions.status, missions.progress, missions.claim_data, missions.claimed_at, missions.expires_at, missions.created_at, missions.updated_at
+FROM missions
+WHERE missions.country_id = ?
+SELECT missions.id, missions.world_id, missions.country_id, missions."key", missions.category, missions.status, missions.progress, missions.claim_data, missions.claimed_at, missions.expires_at, missions.created_at, missions.updated_at
+FROM missions
+WHERE missions.country_id = ?
+2026-07-28 12:25:29,838 INFO sqlalchemy.engine.Engine [cached since 60.56s ago] (14,)
+[cached since 60.56s ago] (14,)
+2026-07-28 12:25:29,840 INFO sqlalchemy.engine.Engine COMMIT
+COMMIT
+2026-07-28 12:25:29,843 INFO sqlalchemy.engine.Engine UPDATE worlds SET tick_count=(worlds.tick_count + ?), last_tick_at=?, updated_at=CURRENT_TIMESTAMP WHERE worlds.id IN (?)
+UPDATE worlds SET tick_count=(worlds.tick_count + ?), last_tick_at=?, updated_at=CURRENT_TIMESTAMP WHERE worlds.id IN (?)
+2026-07-28 12:25:29,843 INFO sqlalchemy.engine.Engine [cached since 60.48s ago] (1, '2026-07-28 08:55:29.842516', 1)
+[cached since 60.48s ago] (1, '2026-07-28 08:55:29.842516', 1)
+2026-07-28 12:25:29,850 INFO sqlalchemy.engine.Engine COMMIT
+COMMIT
+Shutting down
+Waiting for application shutdown.
+2026-07-28T08:56:09.320525Z [info     ] api.shutdown
+Application shutdown complete.
+Finished server process [12132]
+2026-07-28T08:56:09.374216Z [info     ] main.interrupted
+2026-07-28T08:56:09.374216Z [info     ] main.exit

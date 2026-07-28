@@ -64,3 +64,30 @@ class InsufficientResourcesError(GameRuleError):
 
 class EconomyError(NationCraftError):
     code = "economy_error"
+
+
+# Error codes that indicate a transient/network failure (the user can
+# retry). Used by bot handlers to decide whether to clear the FSM state
+# or keep it so the user can retry without re-entering the flow.
+_TRANSIENT_CODES = frozenset({
+    "api_timeout",
+    "api_unreachable",
+    "api_error",  # non-JSON response (e.g. 502 Bad Gateway from uvicorn)
+})
+
+
+def is_transient_error(exc: NationCraftError) -> bool:
+    """Return True if *exc* represents a transient/network error.
+
+    Bot handlers use this to decide whether to clear the FSM state:
+    - Transient errors (502, 503, timeout, DNS failure) → keep state,
+      let the user retry by re-sending their input.
+    - Definitive errors (wrong password, banned, player_exists) →
+      clear state, force the user to restart the flow.
+    """
+    if not isinstance(exc, NationCraftError):
+        return False
+    # 502/503/504 status codes are transient.
+    if exc.status_code in (502, 503, 504):
+        return True
+    return exc.code in _TRANSIENT_CODES

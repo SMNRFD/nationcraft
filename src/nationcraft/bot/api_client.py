@@ -164,10 +164,24 @@ class ApiClient:
         try:
             body = resp.json()
         except ValueError:
+            # The API returned a non-JSON response — this typically
+            # happens when uvicorn returns a 502 Bad Gateway (e.g.
+            # because the ASGI app crashed or the event loop is
+            # overloaded). Previously the error message was
+            # "invalid response: " (with empty resp.text), which was
+            # confusing. Now we give a clear, actionable message.
+            status = resp.status_code or 502
+            if status in (502, 503, 504):
+                raise NationCraftError(
+                    "the game server is temporarily unavailable (HTTP "
+                    f"{status}). Please try again in a moment.",
+                    code="api_unreachable", status_code=status,
+                ) from None
             raise NationCraftError(
-                f"invalid response: {resp.text[:200]}",
-                code="api_error", status_code=resp.status_code or 502,
-            )
+                f"the game server returned an invalid response (HTTP {status}). "
+                "Please try again.",
+                code="api_error", status_code=status,
+            ) from None
 
         if resp.status_code >= 400 or not body.get("ok"):
             err = body.get("error") or {"code": "http_error", "message": resp.text}

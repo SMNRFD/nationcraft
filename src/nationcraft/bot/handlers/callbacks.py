@@ -46,14 +46,27 @@ async def _safe_edit(message, text: str, reply_markup=None, parse_mode: str = "M
     the new content is identical to the current content (e.g. user
     clicks the same button twice). This helper swallows that specific
     error so the UX feels seamless.
+
+    If the message fails to parse as Markdown, it retries as plain text.
     """
     try:
         await message.edit_text(text, reply_markup=reply_markup, parse_mode=parse_mode)
     except TelegramBadRequest as exc:
-        if "message is not modified" in str(exc):
+        msg = str(exc).lower()
+        if "message is not modified" in msg:
             log.debug("bot.edit.unchanged")
-        else:
-            log.warning("bot.edit.failed", error=str(exc)[:200])
+            return
+        if "can't parse entities" in msg:
+            # Markdown parse error — retry as plain text.
+            from nationcraft.bot.utils import _strip_md
+            try:
+                await message.edit_text(
+                    _strip_md(text), reply_markup=reply_markup, parse_mode=None
+                )
+            except TelegramBadRequest:
+                pass
+            return
+        log.warning("bot.edit.failed", error=str(exc)[:200])
     except Exception as exc:  # noqa: BLE001
         log.warning("bot.edit.failed", error=str(exc)[:200])
 
