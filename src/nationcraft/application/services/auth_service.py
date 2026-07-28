@@ -53,12 +53,14 @@ class AuthService:
         if existing is not None:
             raise ConflictError("player already exists", code="player_exists")
 
+        # Hash password ASYNC to avoid blocking the event loop.
+        password_hash = await self.hasher.hash_async(req.password)
         player = PlayerModel(
             telegram_id=req.telegram_id,
             username=req.username,
             locale=req.locale,
             role=PlayerRole.PLAYER.value,
-            password_hash=self.hasher.hash(req.password),
+            password_hash=password_hash,
         )
         self.session.add(player)
         await self.session.flush()
@@ -85,8 +87,8 @@ class AuthService:
             raise AuthenticationError("invalid credentials")
         if player.is_banned:
             raise AuthenticationError("player is banned", code="player_banned")
-        # Verify password (raises AuthenticationError on mismatch).
-        self.hasher.verify(req.password, player.password_hash)
+        # Verify password ASYNC to avoid blocking the event loop.
+        await self.hasher.verify_async(req.password, player.password_hash)
 
         await self.session.execute(
             update(PlayerModel)
@@ -203,10 +205,10 @@ class AuthService:
         )
         if player is None or not player.password_hash:
             raise AuthenticationError("invalid credentials")
-        # Verify old password.
-        self.hasher.verify(old_password, player.password_hash)
-        # Set new password.
-        player.password_hash = self.hasher.hash(new_password)
+        # Verify old password ASYNC.
+        await self.hasher.verify_async(old_password, player.password_hash)
+        # Set new password ASYNC.
+        player.password_hash = await self.hasher.hash_async(new_password)
         await self.session.flush()
         # Revoke all existing sessions (force re-login everywhere).
         await self.revoke_all_sessions(player.id)

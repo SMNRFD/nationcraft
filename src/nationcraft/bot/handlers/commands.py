@@ -1,7 +1,15 @@
-"""Command handlers: /start, /help, /login, /register, /play, /cancel, /language, /resetpassword, /panel."""
+"""Command handlers: /start, /help, /login, /register, /play, /cancel, /language, /resetpassword, /panel.
+
+IMPORTANT: All command handlers are registered BEFORE state handlers.
+This ensures that commands like /login, /cancel, /panel work even when
+the user is stuck in an FSM state (e.g. waiting_for_password).
+
+State handlers use a ``F.text`` filter that excludes commands (text
+starting with ``/``) so they only catch plain text messages.
+"""
 from __future__ import annotations
 
-from aiogram import Router
+from aiogram import F, Router
 from aiogram.filters import Command, CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
@@ -18,12 +26,18 @@ router = Router()
 
 
 def _language_label(code: str) -> str:
-    """Human-readable label for a locale code."""
-    return {
-        "en": "🇬🇧 English",
-        "fa": "🇮🇷 فارسی",
-    }.get(code, code)
+    return {"en": "🇬🇧 English", "fa": "🇮🇷 فارسی"}.get(code, code)
 
+
+# Filter: message is plain text (not a command). Used to exclude
+# commands from FSM state handlers so /cancel, /login, etc. always work
+# even when the user is in a state like waiting_for_password.
+_NOT_COMMAND = F.text & ~F.text.startswith("/")
+
+
+# ====================================================================
+# COMMAND HANDLERS — registered FIRST so they take priority over states
+# ====================================================================
 
 @router.message(CommandStart())
 async def cmd_start(message: Message, state: FSMContext, locale: str = "en") -> None:
@@ -38,111 +52,9 @@ async def cmd_start(message: Message, state: FSMContext, locale: str = "en") -> 
 
 
 @router.message(Command("help"))
-async def cmd_help(message: Message, locale: str = "en") -> None:
-    await message.answer(
-        _("help.body", locale=locale),
-        parse_mode="Markdown",
-    )
-
-
-@router.message(Command("register"))
-async def cmd_register(message: Message, state: FSMContext, locale: str = "en") -> None:
-    """Handle /register.
-
-    If the user is already registered (has a token), show a friendly
-    'already registered' message instead of asking for a new password.
-    """
-    user = message.from_user
-    # If we already have a token for this user, they're registered.
-    if api_client.get_token(user.id):
-        await message.answer(
-            _("auth.already_registered", locale=locale),
-            reply_markup=main_menu_keyboard(),
-        )
-        return
-    # Also check via API if the user exists (handles restarts where the
-    # in-memory token was lost but the DB record persists).
-    # We do this by attempting a /auth/me with no token — if it returns
-    # 401 we know there's no session, but the user might still exist.
-    # Simplest: just ask for a password; if register fails with
-    # 'player_exists', we'll catch it in process_register.
-    await state.set_state(AuthStates.waiting_for_new_password)
-    await message.answer(_("auth.register_prompt", locale=locale))
-
-
-@router.message(AuthStates.waiting_for_new_password)
-async def process_register(message: Message, state: FSMContext, locale: str = "en") -> None:
-    password = (message.text or "").strip()
-    if len(password) < 8:
-        await message.answer(_("auth.password_too_short", locale=locale))
-        return
-    user = message.from_user
-    try:
-        data = await api_client.register(
-            telegram_id=user.id, password=password,
-            username=user.username, locale=locale,
-        )
-    except NationCraftError as exc:
-        if exc.code == "player_exists":
-            # User already registered — clear state and tell them.
-            await state.clear()
-            await message.answer(
-                _("auth.already_registered", locale=locale),
-                reply_markup=main_menu_keyboard(),
-            )
-            return
-        await message.answer(_("errors.error_with_message", locale=locale, message=str(exc)))
-        return
-    except Exception as exc:  # noqa: BLE001
-        log.exception("bot.register.failed", error=str(exc))
-        await message.answer(_("errors.internal", locale=locale))
-        return
+async def cmd_help(message: Message, state: FSMContext, locale: str = "en") -> None:
     await state.clear()
-    # Send a registration success message with the player's details.
-    await message.answer(
-        _("auth.register_success", locale=locale, username=user.full_name),
-        parse_mode="Markdown",
-        reply_markup=main_menu_keyboard(),
-    )
-    # Send a follow-up welcome notification.
-    await message.answer(
-        _("auth.welcome_message", locale=locale),
-        parse_mode="Markdown",
-    )
-
-
-@router.message(Command("login"))
-async def cmd_login(message: Message, state: FSMContext, locale: str = "en") -> None:
-    await state.set_state(AuthStates.waiting_for_password)
-    await message.answer(_("auth.login_prompt", locale=locale))
-
-
-@router.message(AuthStates.waiting_for_password)
-async def process_login(message: Message, state: FSMContext, locale: str = "en") -> None:
-    password = (message.text or "").strip()
-    user = message.from_user
-    try:
-        await api_client.login(telegram_id=user.id, password=password)
-    except NationCraftError as exc:
-        await message.answer(_("auth.login_failed", locale=locale, message=str(exc)))
-        return
-    except Exception as exc:  # noqa: BLE001
-        log.exception("bot.login.failed", error=str(exc))
-        await message.answer(_("errors.internal", locale=locale))
-        return
-    await state.clear()
-    await message.answer(
-        _("auth.login_success", locale=locale),
-        reply_markup=main_menu_keyboard(),
-    )
-
-
-@router.message(Command("play"))
-async def cmd_play(message: Message, locale: str = "en") -> None:
-    await message.answer(
-        _("menu.home", locale=locale),
-        reply_markup=main_menu_keyboard(),
-    )
+    await message.answer(_("help.body", locale=locale), parse_mode="Markdown")
 
 
 @router.message(Command("cancel"))
@@ -154,13 +66,48 @@ async def cmd_cancel(message: Message, state: FSMContext, locale: str = "en") ->
     )
 
 
+@router.message(Command("play"))
+async def cmd_play(message: Message, state: FSMContext, locale: str = "en") -> None:
+    await state.clear()
+    await message.answer(
+        _("menu.home", locale=locale),
+        reply_markup=main_menu_keyboard(),
+    )
+
+
+@router.message(Command("register"))
+async def cmd_register(message: Message, state: FSMContext, locale: str = "en") -> None:
+    """Handle /register.
+
+    If the user is already registered (has a token), show a friendly
+    'already registered' message instead of asking for a new password.
+    """
+    await state.clear()
+    user = message.from_user
+    # If we already have a token for this user, they're registered.
+    if api_client.get_token(user.id):
+        await message.answer(
+            _("auth.already_registered", locale=locale),
+            reply_markup=main_menu_keyboard(),
+        )
+        return
+    await state.set_state(AuthStates.waiting_for_new_password)
+    await message.answer(_("auth.register_prompt", locale=locale))
+
+
+@router.message(Command("login"))
+async def cmd_login(message: Message, state: FSMContext, locale: str = "en") -> None:
+    await state.clear()
+    await state.set_state(AuthStates.waiting_for_password)
+    await message.answer(_("auth.login_prompt", locale=locale))
+
+
 @router.message(Command("language"))
-async def cmd_language(message: Message, locale: str = "en") -> None:
-    """Show a language picker. Selection is handled by ``cb_language``."""
+async def cmd_language(message: Message, state: FSMContext, locale: str = "en") -> None:
+    await state.clear()
     from nationcraft.core.config import settings
     kb = InlineKeyboardBuilder()
     for loc in settings.supported_locales_list:
-        # Mark the current locale with ✓
         label = f"✓ {_language_label(loc)}" if loc == locale else _language_label(loc)
         kb.button(text=label, callback_data=f"lang:{loc}")
     kb.adjust(2)
@@ -170,15 +117,10 @@ async def cmd_language(message: Message, locale: str = "en") -> None:
     )
 
 
-# -------------------- Reset Password --------------------
-
 @router.message(Command("resetpassword"))
 async def cmd_reset_password(message: Message, state: FSMContext, locale: str = "en") -> None:
-    """Start the password reset flow.
-
-    Requires the user to be logged in (have a token). Asks for the
-    old password, then the new password.
-    """
+    """Start the password reset flow."""
+    await state.clear()
     user = message.from_user
     if not api_client.get_token(user.id):
         await message.answer(_("auth.must_login_first", locale=locale))
@@ -187,7 +129,145 @@ async def cmd_reset_password(message: Message, state: FSMContext, locale: str = 
     await message.answer(_("auth.reset_password_old_prompt", locale=locale))
 
 
-@router.message(AuthStates.waiting_for_old_password)
+@router.message(Command("panel"))
+async def cmd_panel(message: Message, state: FSMContext, locale: str = "en") -> None:
+    """Show the user control panel."""
+    await state.clear()
+    user = message.from_user
+    token = api_client.get_token(user.id)
+    if not token:
+        await message.answer(_("auth.must_login_first", locale=locale))
+        return
+
+    try:
+        player = await api_client.get_me(user.id)
+    except NationCraftError as exc:
+        await message.answer(
+            _("errors.error_with_message", locale=locale, message=str(exc))
+        )
+        return
+    except Exception:  # noqa: BLE001
+        await message.answer(_("errors.api_unreachable", locale=locale))
+        return
+
+    role_label = {
+        "player": _("role.player", locale=locale),
+        "moderator": _("role.moderator", locale=locale),
+        "admin": _("role.admin", locale=locale),
+        "owner": _("role.owner", locale=locale),
+    }.get(player.get("role", "player"), player.get("role", "player"))
+
+    text = (
+        f"👤 *{_('panel.title', locale=locale)}*\n\n"
+        f"🆔 ID: `{player.get('id')}`\n"
+        f"📱 Telegram: `{player.get('telegram_id')}`\n"
+        f"👤 Username: {player.get('username') or '—'}\n"
+        f"🌐 Locale: {_language_label(player.get('locale', 'en'))}\n"
+        f"🎖 Role: {role_label}\n"
+        f"🌍 World: {player.get('world_id') or '—'}\n"
+        f"🏳 Country: {player.get('country_id') or '—'}\n"
+    )
+
+    kb = InlineKeyboardBuilder()
+    kb.button(text=_("panel.button_language", locale=locale), callback_data="menu:settings")
+    kb.button(text=_("panel.button_reset_password", locale=locale), callback_data="panel:reset_password")
+    if player.get("role") in ("admin", "owner"):
+        kb.button(text="🛠 Admin", callback_data="menu:admin")
+    kb.adjust(1)
+    kb.button(text="⬅ " + _("common.back", locale=locale), callback_data="menu:home")
+    await message.answer(text, reply_markup=kb.as_markup(), parse_mode="Markdown")
+
+
+# ====================================================================
+# STATE HANDLERS — registered AFTER commands, with ~Command() filter
+# so they only catch plain text, never commands.
+# ====================================================================
+
+@router.message(AuthStates.waiting_for_new_password, _NOT_COMMAND)
+async def process_register(message: Message, state: FSMContext, locale: str = "en") -> None:
+    """Handle password input during registration."""
+    password = (message.text or "").strip()
+    if len(password) < 8:
+        await message.answer(_("auth.password_too_short", locale=locale))
+        return
+    user = message.from_user
+    try:
+        data = await api_client.register(
+            telegram_id=user.id, password=password,
+            username=user.username, locale=locale,
+        )
+    except NationCraftError as exc:
+        # ALWAYS clear state on ANY error — prevents getting stuck.
+        await state.clear()
+        if exc.code == "player_exists":
+            await message.answer(
+                _("auth.already_registered", locale=locale),
+                reply_markup=main_menu_keyboard(),
+            )
+            return
+        await message.answer(
+            _("errors.error_with_message", locale=locale, message=str(exc)),
+            reply_markup=main_menu_keyboard(),
+        )
+        return
+    except Exception as exc:  # noqa: BLE001
+        # ALWAYS clear state on ANY error — prevents getting stuck.
+        await state.clear()
+        log.exception("bot.register.failed", error=str(exc))
+        await message.answer(
+            _("errors.internal", locale=locale),
+            reply_markup=main_menu_keyboard(),
+        )
+        return
+    # Success — clear state.
+    await state.clear()
+    await message.answer(
+        _("auth.register_success", locale=locale, username=user.full_name),
+        parse_mode="Markdown",
+        reply_markup=main_menu_keyboard(),
+    )
+    await message.answer(
+        _("auth.welcome_message", locale=locale),
+        parse_mode="Markdown",
+    )
+
+
+@router.message(AuthStates.waiting_for_password, _NOT_COMMAND)
+async def process_login(message: Message, state: FSMContext, locale: str = "en") -> None:
+    """Handle password input during login."""
+    password = (message.text or "").strip()
+    if not password:
+        await message.answer(_("auth.password_empty", locale=locale))
+        return
+    user = message.from_user
+    try:
+        await api_client.login(telegram_id=user.id, password=password)
+    except NationCraftError as exc:
+        # ALWAYS clear state on ANY error — prevents getting stuck.
+        await state.clear()
+        await message.answer(
+            _("auth.login_failed", locale=locale, message=str(exc)),
+            reply_markup=main_menu_keyboard(),
+        )
+        return
+    except Exception as exc:  # noqa: BLE001
+        # ALWAYS clear state on ANY error — prevents getting stuck.
+        await state.clear()
+        log.exception("bot.login.failed", error=str(exc))
+        await message.answer(
+            _("errors.internal", locale=locale),
+            reply_markup=main_menu_keyboard(),
+        )
+        return
+    # Success — clear state.
+    await state.clear()
+    await message.answer(
+        _("auth.login_success", locale=locale),
+        reply_markup=main_menu_keyboard(),
+    )
+
+
+@router.message(AuthStates.waiting_for_old_password, _NOT_COMMAND)
 async def process_old_password(message: Message, state: FSMContext, locale: str = "en") -> None:
     """Receive the old password and ask for the new one."""
     old_password = (message.text or "").strip()
@@ -199,7 +279,7 @@ async def process_old_password(message: Message, state: FSMContext, locale: str 
     await message.answer(_("auth.reset_password_new_prompt", locale=locale))
 
 
-@router.message(AuthStates.waiting_for_new_password_reset)
+@router.message(AuthStates.waiting_for_new_password_reset, _NOT_COMMAND)
 async def process_new_password(message: Message, state: FSMContext, locale: str = "en") -> None:
     """Receive the new password and call the API to reset."""
     new_password = (message.text or "").strip()
@@ -223,66 +303,16 @@ async def process_new_password(message: Message, state: FSMContext, locale: str 
         )
         return
     except Exception as exc:  # noqa: BLE001
-        log.exception("bot.reset_password.failed", error=str(exc))
         await state.clear()
-        await message.answer(_("errors.internal", locale=locale))
+        log.exception("bot.reset_password.failed", error=str(exc))
+        await message.answer(
+            _("errors.internal", locale=locale),
+            reply_markup=main_menu_keyboard(),
+        )
         return
     await state.clear()
-    # The API revoked all sessions, so clear the local token.
     api_client._tokens.pop(user.id, None)
     await message.answer(
         _("auth.password_reset_success", locale=locale),
         reply_markup=main_menu_keyboard(),
     )
-
-
-# -------------------- User Panel --------------------
-
-@router.message(Command("panel"))
-async def cmd_panel(message: Message, locale: str = "en") -> None:
-    """Show the user control panel: locale, reset password, profile info."""
-    user = message.from_user
-    token = api_client.get_token(user.id)
-    if not token:
-        await message.answer(_("auth.must_login_first", locale=locale))
-        return
-
-    # Fetch player profile.
-    try:
-        player = await api_client.get_me(user.id)
-    except NationCraftError as exc:
-        await message.answer(
-            _("errors.error_with_message", locale=locale, message=str(exc))
-        )
-        return
-    except Exception:  # noqa: BLE001
-        await message.answer(_("errors.api_unreachable", locale=locale))
-        return
-
-    # Build panel text.
-    role_label = {
-        "player": _("role.player", locale=locale),
-        "moderator": _("role.moderator", locale=locale),
-        "admin": _("role.admin", locale=locale),
-        "owner": _("role.owner", locale=locale),
-    }.get(player.get("role", "player"), player.get("role", "player"))
-
-    text = (
-        f"👤 *{_('panel.title', locale=locale)}*\n\n"
-        f"🆔 ID: `{player.get('id')}`\n"
-        f"📱 Telegram: `{player.get('telegram_id')}`\n"
-        f"👤 Username: {player.get('username') or '—'}\n"
-        f"🌐 Locale: {_language_label(player.get('locale', 'en'))}\n"
-        f" badge Role: {role_label}\n"
-        f"🌍 World: {player.get('world_id') or '—'}\n"
-        f"🏳 Country: {player.get('country_id') or '—'}\n"
-    )
-
-    kb = InlineKeyboardBuilder()
-    kb.button(text=_("panel.button_language", locale=locale), callback_data="menu:settings")
-    kb.button(text=_("panel.button_reset_password", locale=locale), callback_data="panel:reset_password")
-    if player.get("role") in ("admin", "owner"):
-        kb.button(text="🛠 Admin", callback_data="menu:admin")
-    kb.adjust(1)
-    kb.button(text="⬅ " + _("common.back", locale=locale), callback_data="menu:home")
-    await message.answer(text, reply_markup=kb.as_markup(), parse_mode="Markdown")

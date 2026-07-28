@@ -23,10 +23,15 @@ class ApiClient:
         self._client: httpx.AsyncClient | None = None
 
     async def _get_client(self) -> httpx.AsyncClient:
-        """Lazily create a shared httpx client with a 60s timeout."""
+        """Lazily create a shared httpx client with a 15s timeout.
+
+        15s is generous enough for Argon2 hashing (~200ms) plus DB
+        operations, but short enough that the user doesn't wait 60
+        seconds for a timeout.
+        """
         if self._client is None or self._client.is_closed:
             self._client = httpx.AsyncClient(
-                timeout=httpx.Timeout(60.0, connect=10.0),
+                timeout=httpx.Timeout(15.0, connect=5.0),
                 limits=httpx.Limits(max_connections=20, max_keepalive_connections=10),
             )
         return self._client
