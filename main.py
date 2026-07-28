@@ -63,6 +63,24 @@ import signal
 import sys
 from pathlib import Path
 
+# ── Windows event-loop fix ─────────────────────────────────────────────
+# Python 3.8+ on Windows defaults to ProactorEventLoop, which has SERIOUS
+# issues when multiple async I/O layers share one event loop:
+#
+#   • aiohttp (Telegram bot) + httpx (API client) + uvicorn (API server)
+#     all in one process → TCP connections to localhost stall randomly.
+#   • Symptoms: httpx.ReadTimeout (API call succeeds in 300ms but the
+#     bot's httpx client never receives the response), TelegramNetworkError
+#     [WinError 64] "The specified network name is no longer available",
+#     update handling takes 20+ seconds.
+#   • The root cause: ProactorEventLoop uses Windows IOCP which doesn't
+#     handle mixed localhost TCP + outbound HTTPS well under contention.
+#
+# Fix: switch to SelectorEventLoop, which uses select() and handles
+# mixed I/O correctly. This must be done BEFORE any asyncio code runs.
+if sys.platform == "win32":
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
 # Ensure src/ is importable when running from a non-installed checkout
 # (e.g. python main.py without `pip install -e .`).
 _SRC = Path(__file__).resolve().parent / "src"

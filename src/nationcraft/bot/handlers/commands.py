@@ -192,7 +192,7 @@ async def cmd_status(message: Message, state: FSMContext, locale: str = "en") ->
         api_detail += f"\n   Error: {type(e).__name__}: {str(e)[:100]}"
     except httpx.TimeoutException:
         api_status = "timeout"
-        api_detail = f"\n   API did not respond within 5 seconds."
+        api_detail = f"\n   API did not respond within 10 seconds."
     except Exception as e:
         api_status = f"error: {type(e).__name__}"
         api_detail = f"\n   {str(e)[:150]}"

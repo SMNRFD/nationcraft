@@ -55,6 +55,3 @@ coverage.xml
 # OS
 .DS_Store
 Thumbs.db
-nationcraft.db-shm
-.gitignore
-nationcraft.db-wal

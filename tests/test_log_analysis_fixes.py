@@ -13,24 +13,37 @@ import pytest
 
 
 # ---------------------------------------------------------------------
-# Bug 24: Pre-flight API check raced with API startup
+# Bug 24: Pre-flight API check raced with API startup — REMOVED entirely
 # ---------------------------------------------------------------------
 
-def test_bot_pre_flight_check_retries():
-    """The pre-flight API check should retry for up to 30 seconds,
-    not fail immediately. We verify by reading the source code that
-    the retry loop exists.
+def test_bot_has_no_pre_flight_check():
+    """The pre-flight API check was REMOVED because on Windows the
+    ProactorEventLoop stalls localhost TCP connections, so the /health
+    check timed out even when the API was running fine. The bot's
+    error handlers already catch API errors gracefully.
     """
     import inspect
     from nationcraft.bot.app import run_bot
     source = inspect.getsource(run_bot)
-    # The retry loop should be present.
-    assert "for attempt in range" in source, (
-        "run_bot should have a retry loop for the pre-flight API check"
+    # The retry loop should NOT be present (it caused 30s delays + false
+    # "unreachable" warnings on Windows).
+    assert "for attempt in range" not in source, (
+        "run_bot should NOT have a pre-flight API retry loop — it "
+        "causes 30s delays and false 'unreachable' warnings on Windows"
     )
-    # Should retry at least 10 times (15 * 2s = 30s).
-    assert "range(15)" in source or "range(10)" in source or "range(20)" in source, (
-        "pre-flight check should retry at least 10 times"
+
+
+def test_windows_event_loop_fix():
+    """On Windows, the SelectorEventLoop policy should be set to fix
+    TCP stalls between aiohttp (Telegram), httpx (API client), and
+    uvicorn (API server) sharing one event loop.
+    """
+    from pathlib import Path
+    main_path = Path(__file__).parent.parent / "main.py"
+    source = main_path.read_text()
+    assert "WindowsSelectorEventLoopPolicy" in source, (
+        "main.py should set WindowsSelectorEventLoopPolicy on Windows "
+        "to fix ProactorEventLoop TCP stall issues"
     )
 
 
@@ -147,3 +160,44 @@ def test_safe_send_falls_back_on_markdown_error():
     assert len(calls) == 2, f"expected 2 calls (Markdown + plain), got {len(calls)}"
     assert calls[0]["parse_mode"] == "Markdown"
     assert calls[1]["parse_mode"] is None  # fallback to plain text
+
+
+# ---------------------------------------------------------------------
+# Bug 28: Global error handler catches TelegramNetworkError
+# ---------------------------------------------------------------------
+
+def test_bot_has_global_error_handler():
+    """The bot dispatcher should have a global error handler that
+    catches TelegramNetworkError (WinError 64) and logs it concisely
+    without crashing the polling loop.
+    """
+    import inspect
+    from nationcraft.bot.app import build_dispatcher
+    source = inspect.getsource(build_dispatcher)
+    assert "@dp.error()" in source or "dp.error" in source, (
+        "dispatcher should have a global error handler registered via @dp.error()"
+    )
+    assert "TelegramNetworkError" in source, (
+        "error handler should catch TelegramNetworkError (WinError 64)"
+    )
+
+
+# ---------------------------------------------------------------------
+# Bug 30: /status timeout message says correct timeout value
+# ---------------------------------------------------------------------
+
+def test_status_timeout_message_matches_actual_timeout():
+    """The /status command's timeout message should say '10 seconds'
+    (matching the actual httpx timeout of 10.0s), not '5 seconds'.
+    """
+    from pathlib import Path
+    commands_path = Path(__file__).parent.parent / "src" / "nationcraft" / "bot" / "handlers" / "commands.py"
+    source = commands_path.read_text()
+    # The timeout in the AsyncClient should be 10.0
+    assert "timeout=10.0" in source, (
+        "/status should use timeout=10.0 for the API health check"
+    )
+    # The error message should say "10 seconds" (not "5 seconds")
+    assert "within 10 seconds" in source, (
+        "/status timeout message should say 'within 10 seconds'"
+    )
