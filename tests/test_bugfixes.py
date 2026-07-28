@@ -139,11 +139,16 @@ async def test_api_client_refresh_failure_clears_tokens():
 
 
 def test_api_client_timeout_is_bounded():
-    """The httpx client should be configured with a tight 5s timeout (was 15s)."""
+    """The httpx client should be configured with a bounded timeout.
+
+    Was 15s (original) → 5s (too short, caused ReadTimeout on Argon2
+    hashing) → 15s (current, balances responsiveness with Argon2's
+    ~500ms hash time on slow machines).
+    """
     import httpx
     from nationcraft.bot.api_client import _DEFAULT_TIMEOUT
-    # Read timeout should be 5s, not 15s.
-    assert _DEFAULT_TIMEOUT.read == pytest.approx(5.0)
+    # Read timeout should be 15s (enough for Argon2 + DB I/O).
+    assert _DEFAULT_TIMEOUT.read == pytest.approx(15.0)
     assert _DEFAULT_TIMEOUT.connect == pytest.approx(2.0)
 
 

@@ -165,7 +165,7 @@ async def cmd_status(message: Message, state: FSMContext, locale: str = "en") ->
     try:
         import time as _time
         start = _time.perf_counter()
-        async with httpx.AsyncClient(timeout=5.0) as _c:
+        async with httpx.AsyncClient(timeout=10.0) as _c:
             r = await _c.get(f"{api_client.base_url}/health")
             elapsed = (_time.perf_counter() - start) * 1000
             if r.status_code == 200:

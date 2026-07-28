@@ -31,7 +31,12 @@ def _build_engine() -> AsyncEngine:
     "database is locked" instead of failing immediately.
     """
     url = settings.DATABASE_URL
-    kwargs: dict = {"echo": settings.is_dev}
+    # echo=False — never log every SQL statement. The previous
+    # ``echo=settings.is_dev`` produced thousands of log lines per tick
+    # (one per query × 14 countries × multiple resources = 100+ lines
+    # per tick), making the console unusable. Use LOG_LEVEL=DEBUG on
+    # the SQLAlchemy logger directly if you need SQL tracing.
+    kwargs: dict = {"echo": False}
     if not url.startswith("sqlite"):
         kwargs.update(
             pool_size=settings.DB_POOL_SIZE,

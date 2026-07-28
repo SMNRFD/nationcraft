@@ -42,37 +42,40 @@ async def run_bot(use_webhook: bool = False) -> None:
     if not settings.TELEGRAM_BOT_TOKEN:
         raise RuntimeError("TELEGRAM_BOT_TOKEN not set")
 
+    # Use parse_mode=None (plain text) as the DEFAULT — individual
+    # handlers that need Markdown explicitly pass parse_mode="Markdown"
+    # through safe_send(). This prevents TelegramBadRequest
+    # "can't parse entities" when user-supplied content (usernames,
+    # country names, etc.) contains Markdown special chars like _ or *.
     bot = Bot(
         token=settings.TELEGRAM_BOT_TOKEN,
-        default=DefaultBotProperties(parse_mode=ParseMode.MARKDOWN),
+        default=DefaultBotProperties(parse_mode=None),
     )
     dp = build_dispatcher()
 
     # Pre-flight check: verify the API is reachable before starting
-    # polling. If the API is down, every bot command will fail with
-    # "Cannot reach the game server" — better to warn now so the user
-    # knows to fix it.
+    # polling. Wait up to 30 seconds for the API to come up (it takes
+    # ~10s to start: plugin loading, DB check, Redis check, i18n load).
+    # Previously this checked once with a 5s timeout and failed every
+    # time when bot+API share a process (the API hadn't started yet).
     import httpx
     api_reachable = False
-    try:
-        async with httpx.AsyncClient(timeout=5.0) as _c:
-            r = await _c.get(f"{api_client.base_url}/health")
-            if r.status_code == 200:
-                api_reachable = True
-                log.info("bot.api.reachable", url=api_client.base_url)
-            else:
-                log.warning(
-                    "bot.api.unreachable",
-                    url=api_client.base_url,
-                    status=r.status_code,
-                    hint="Run `python main.py --local` (not --only bot) "
-                         "and `python main.py --local --initdb` first.",
-                )
-    except Exception as exc:  # noqa: BLE001
+    for attempt in range(15):  # 15 * 2s = 30s max
+        try:
+            async with httpx.AsyncClient(timeout=3.0) as _c:
+                r = await _c.get(f"{api_client.base_url}/health")
+                if r.status_code == 200:
+                    api_reachable = True
+                    log.info("bot.api.reachable", url=api_client.base_url, attempts=attempt + 1)
+                    break
+        except Exception:
+            pass
+        await asyncio.sleep(2)
+
+    if not api_reachable:
         log.warning(
             "bot.api.unreachable",
             url=api_client.base_url,
-            error=str(exc)[:200],
             hint="Run `python main.py --local` (not --only bot) "
                  "and `python main.py --local --initdb` first.",
         )

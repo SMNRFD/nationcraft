@@ -28,10 +28,11 @@ from nationcraft.core.config import settings
 from nationcraft.core.exceptions import NationCraftError, AuthenticationError
 
 
-# Tight timeout: 5s read (was 15s — caused the reported 15-17s delays),
-# 2s connect (DNS+TCP). Argon2 hashing is ~200ms, DB ops <50ms, so 5s is
-# generous but bounded.
-_DEFAULT_TIMEOUT = httpx.Timeout(5.0, connect=2.0, write=2.0, pool=1.0)
+# Timeout: 15s read (was 5s — too short for Argon2 hashing on Windows/
+# Python 3.11 where it can take 500ms+; combined with DB I/O the total
+# can exceed 5s, causing httpx.ReadTimeout → "request timed out").
+# 2s connect (DNS+TCP), 5s write, 2s pool.
+_DEFAULT_TIMEOUT = httpx.Timeout(15.0, connect=2.0, write=5.0, pool=2.0)
 _DEFAULT_LIMITS = httpx.Limits(max_connections=30, max_keepalive_connections=15)
 
 
