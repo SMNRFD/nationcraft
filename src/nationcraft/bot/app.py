@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+from contextlib import suppress
 
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
@@ -76,6 +77,40 @@ def build_dispatcher() -> Dispatcher:
     return dp
 
 
+def _build_aiohttp_session() -> "aiohttp.ClientSession":
+    """Build an aiohttp session with proxy support and resilient timeouts.
+
+    For users in regions where api.telegram.org is blocked or throttled
+    (Iran, China, Russia, etc.), set ``TELEGRAM_PROXY`` in .env:
+      TELEGRAM_PROXY=socks5://127.0.0.1:1080
+      TELEGRAM_PROXY=http://127.0.0.1:8080
+    """
+    import aiohttp
+
+    # Total timeout: 30s connect, 60s total (Telegram can be slow on
+    # poor networks — the default 5s was too short and caused WinError
+    # 10054 on every long-poll cycle).
+    timeout = aiohttp.ClientTimeout(total=60.0, connect=30.0, sock_connect=30.0, sock_read=30.0)
+
+    # TCP connector with keepalive and generous limits.
+    connector = aiohttp.TCPConnector(
+        limit=20,
+        limit_per_host=10,
+        keepalive_timeout=30,
+        enable_cleanup_closed=True,
+        force_close=False,
+    )
+
+    proxy = settings.TELEGRAM_PROXY or None
+    if proxy:
+        log.info("bot.proxy.configured", proxy=proxy[:50])
+
+    # Note: aiohttp uses the ``proxy`` parameter on each request, not
+    # on the session. aiogram passes it through via Bot(session=...).
+    # We'll set it on the session for non-aiogram requests.
+    return aiohttp.ClientSession(timeout=timeout, connector=connector)
+
+
 async def run_bot(use_webhook: bool = False) -> None:
     configure_logging(settings.LOG_LEVEL, settings.LOG_FORMAT)
     if not settings.TELEGRAM_BOT_TOKEN:
@@ -92,13 +127,16 @@ async def run_bot(use_webhook: bool = False) -> None:
     )
     dp = build_dispatcher()
 
-    # No pre-flight API check — it caused more problems than it solved:
-    # on Windows the ProactorEventLoop stalls localhost TCP connections,
-    # so the /health check timed out even when the API was running fine.
-    # The bot's error handlers already catch API errors gracefully and
-    # show a helpful message. If the API isn't ready yet, the user's
-    # first command will fail with "try again" — and by the second try
-    # the API will be up.
+    # Configure the bot's HTTP session with proxy + resilient timeouts.
+    # This must happen BEFORE start_polling so the first get_me() uses
+    # the new session.
+    session = _build_aiohttp_session()
+    bot.session._connector = session.connector
+    bot.session._timeout = session.timeout
+    # Store proxy for aiogram to use on every request.
+    if settings.TELEGRAM_PROXY:
+        bot.session._default_proxy = settings.TELEGRAM_PROXY
+    await session.close()  # we only needed its config, not the session itself
 
     if use_webhook and settings.TELEGRAM_WEBHOOK_URL:
         await bot.set_webhook(

@@ -57,6 +57,11 @@ class Settings(BaseSettings):
     TELEGRAM_WEBHOOK_SECRET: str = ""
     TELEGRAM_ADMIN_IDS: str = ""
     TELEGRAM_API_BASE: str = "https://api.telegram.org"
+    # Proxy for the Telegram bot's HTTP client. Essential for users in
+    # regions where api.telegram.org is blocked or throttled (e.g. Iran,
+    # China, Russia). Format: "http://host:port" or "socks5://host:port".
+    # Example: TELEGRAM_PROXY=socks5://127.0.0.1:1080
+    TELEGRAM_PROXY: str = ""
 
     # ---- Game ----
     TICK_INTERVAL_SECONDS: int = 60

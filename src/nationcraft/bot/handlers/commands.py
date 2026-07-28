@@ -386,16 +386,19 @@ async def process_register(message: Message, state: FSMContext, locale: str = "e
     # Success — clear state.
     await state.clear()
     safe_name = escape_md(user.full_name)
-    await safe_send(
-        message,
-        _("auth.register_success", locale=locale, username=safe_name),
-        parse_mode="Markdown",
-        reply_markup=main_menu_keyboard(),
+    # Combine the success message and welcome message into ONE send
+    # to reduce network roundtrips (each Telegram API call can take
+    # 5-10s on poor networks — 2 calls = 10-20s of blocking).
+    combined = (
+        _("auth.register_success", locale=locale, username=safe_name)
+        + "\n\n"
+        + _("auth.welcome_message", locale=locale)
     )
     await safe_send(
         message,
-        _("auth.welcome_message", locale=locale),
+        combined,
         parse_mode="Markdown",
+        reply_markup=main_menu_keyboard(),
     )
 
 

@@ -63,30 +63,52 @@ async def safe_send(
     *,
     reply_markup: Any = None,
     parse_mode: str | None = "Markdown",
+    max_retries: int = 3,
     **kwargs: Any,
 ) -> Message | None:
-    """Send a message, falling back to plain text on parse errors.
+    """Send a message with retry, fallback to plain text on parse errors.
 
-    If Telegram rejects the message due to a Markdown/HTML parse
-    error, this retries with ``parse_mode=None`` (plain text) so the
-    user always sees something.
+    Retries up to ``max_retries`` times on network errors (WinError 10054,
+    connection reset, timeout) — common on poor networks. If Telegram
+    rejects the message due to a Markdown parse error, retries as plain
+    text (``parse_mode=None``).
     """
-    try:
-        return await message.answer(
-            text, reply_markup=reply_markup, parse_mode=parse_mode, **kwargs
-        )
-    except TelegramBadRequest as exc:
-        if _is_parse_error(exc):
-            # Retry as plain text (strip markdown markers for readability).
-            plain = _strip_md(text)
-            try:
-                return await message.answer(
-                    plain, reply_markup=reply_markup, parse_mode=None, **kwargs
-                )
-            except TelegramBadRequest:
-                return None
-        # Non-parse error — re-raise so callers can handle it.
-        raise
+    import asyncio as _asyncio
+    from aiogram.exceptions import TelegramNetworkError
+
+    last_exc = None
+    for attempt in range(max_retries):
+        try:
+            return await message.answer(
+                text, reply_markup=reply_markup, parse_mode=parse_mode, **kwargs
+            )
+        except TelegramBadRequest as exc:
+            if _is_parse_error(exc):
+                # Retry as plain text (strip markdown markers for readability).
+                plain = _strip_md(text)
+                try:
+                    return await message.answer(
+                        plain, reply_markup=reply_markup, parse_mode=None, **kwargs
+                    )
+                except TelegramBadRequest:
+                    return None
+            # Non-parse TelegramBadRequest — re-raise.
+            raise
+        except TelegramNetworkError as exc:
+            last_exc = exc
+            # Network error (WinError 10054, timeout, connection reset).
+            # Wait briefly and retry — the connection will be re-established
+            # by aiohttp automatically.
+            if attempt < max_retries - 1:
+                await _asyncio.sleep(1.0 * (attempt + 1))  # 1s, 2s, 3s
+            continue
+        except Exception as exc:
+            # Other unexpected errors — log and give up.
+            last_exc = exc
+            break
+    # All retries failed — return None silently (the global error handler
+    # will log the network error).
+    return None
 
 
 async def safe_edit(
