@@ -99,6 +99,14 @@ class CountryService:
         ws = WorldService(self.session)
         await ws.increment_player_count(world_id, delta=1)
 
+        # Seed starting missions (tutorial + daily) for the new ruler.
+        # Previously this was a dead method — players got a country with
+        # zero missions, so /social/missions always returned an empty list
+        # and the mission claim flow was unreachable.
+        from nationcraft.application.services.mission_service import MissionService
+        mission_svc = MissionService(self.session)
+        await mission_svc.seed_for_country(country.id)
+
         await event_bus.publish(Event(
             type="country.selected",
             world_id=world_id,

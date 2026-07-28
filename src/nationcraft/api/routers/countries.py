@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from fastapi import APIRouter
+from pydantic import BaseModel, Field
 
 from nationcraft.api.dependencies import CurrentPlayer, SessionDep
 from nationcraft.api.schemas.envelope import success
@@ -9,6 +10,21 @@ from nationcraft.application.services import CountryService
 from nationcraft.infrastructure.db.models import PlayerModel
 
 router = APIRouter(prefix="/countries", tags=["countries"])
+
+
+class SelectCountryRequest(BaseModel):
+    """Request body for ``POST /countries/select``.
+
+    The previous implementation accepted a bare ``dict`` and indexed
+    ``payload["world_id"]`` / ``payload["country_code"]`` directly —
+    which raised ``KeyError`` → 500 Internal Server Error whenever the
+    caller sent a different shape (e.g. ``{"country_id": 2}``).
+    Using a Pydantic model makes FastAPI return a clean 422 with a
+    precise validation error instead.
+    """
+
+    world_id: int = Field(ge=1)
+    country_code: str = Field(min_length=2, max_length=2)
 
 
 @router.get("/available/{world_id}", response_model=None)
@@ -31,13 +47,13 @@ async def list_by_world(
 
 @router.post("/select", response_model=None)
 async def select_country(
-    payload: dict, session: SessionDep, player_id: CurrentPlayer
+    req: SelectCountryRequest, session: SessionDep, player_id: CurrentPlayer
 ) -> dict:
     svc = CountryService(session)
     result = await svc.select_country(
         player_id=player_id,
-        world_id=int(payload["world_id"]),
-        country_code=payload["country_code"],
+        world_id=req.world_id,
+        country_code=req.country_code,
     )
     return success(result.model_dump(mode="json"))
 

@@ -21,8 +21,10 @@ from nationcraft.domain.entities import (
 from nationcraft.domain.enums import (
     AllianceRole,
     DiplomaticStatus,
+    EventCategory,
     MarketOrderSide,
     MarketOrderStatus,
+    MissionCategory,
     MissionStatus,
     NotificationLevel,
     OrderType,
@@ -347,7 +349,12 @@ class MissionRepository:
             world_id=m.world_id,
             country_id=m.country_id,
             key=m.key,
-            category=m.category,  # type: ignore[arg-type]
+            # Properly convert the raw DB string to the MissionCategory
+            # enum. Previously this assigned the string directly
+            # (silenced by ``# type: ignore``) which then broke every
+            # caller that did ``mission.category.value`` — notably
+            # ``GET /social/missions`` returned a 500.
+            category=MissionCategory(m.category),
             status=MissionStatus(m.status),
             progress=m.progress,
             claimed_at=m.claimed_at,
@@ -428,7 +435,10 @@ class GameEventRepository:
             id=m.id,
             world_id=m.world_id,
             key=m.key,
-            category=m.category,  # type: ignore[arg-type]
+            # Properly convert the raw DB string to EventCategory.
+            # Same bug as MissionRepository._to_entity — calling code
+            # that did ``event.category.value`` would have crashed.
+            category=EventCategory(m.category) if m.category else EventCategory.RANDOM,
             payload=m.payload or {},
             triggered_at=m.triggered_at,
         )

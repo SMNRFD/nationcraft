@@ -9,6 +9,9 @@ items:
       money: 2000000
       food: 50000
       water: 50000
+      wood: 5000
+      stone: 3000
+      weapons: 200
       oil: 20000
       gas: 15000
       iron: 5000
@@ -30,6 +33,9 @@ items:
       money: 5000000
       food: 40000
       water: 40000
+      wood: 5000
+      stone: 2000
+      weapons: 200
       electronics: 5000
     starting_buildings:
       farm: 4
@@ -49,6 +55,9 @@ items:
     starting_resources:
       money: 4500000
       food: 50000
+      wood: 5000
+      stone: 3000
+      weapons: 200
       coal: 15000
       iron: 10000
       steel: 5000
@@ -72,6 +81,8 @@ items:
       food: 80000
       water: 80000
       wood: 30000
+      stone: 3000
+      weapons: 200
       iron: 8000
     starting_buildings:
       farm: 8
@@ -90,6 +101,9 @@ items:
     starting_resources:
       money: 10000000
       food: 100000
+      wood: 10000
+      stone: 5000
+      weapons: 500
       oil: 30000
       iron: 20000
       coal: 20000
@@ -112,6 +126,9 @@ items:
     starting_resources:
       money: 8000000
       food: 120000
+      wood: 10000
+      stone: 5000
+      weapons: 500
       coal: 40000
       iron: 30000
       rare_earth: 5000
@@ -133,6 +150,10 @@ items:
     starting_treasury: 6000000
     starting_resources:
       money: 6000000
+      food: 50000
+      wood: 15000
+      stone: 4000
+      weapons: 400
       oil: 50000
       gas: 40000
       iron: 20000
@@ -155,6 +176,9 @@ items:
     starting_resources:
       money: 4000000
       food: 90000
+      wood: 8000
+      stone: 3000
+      weapons: 300
       iron: 15000
       coal: 25000
     starting_buildings:
@@ -175,6 +199,9 @@ items:
     starting_resources:
       money: 4500000
       food: 60000
+      wood: 6000
+      stone: 3000
+      weapons: 200
       uranium: 500
     starting_buildings:
       farm: 5
@@ -193,6 +220,9 @@ items:
     starting_resources:
       money: 4500000
       food: 40000
+      wood: 5000
+      stone: 3000
+      weapons: 200
       coal: 10000
     starting_buildings:
       farm: 4
@@ -212,6 +242,9 @@ items:
     starting_resources:
       money: 3000000
       food: 50000
+      wood: 5000
+      stone: 3000
+      weapons: 200
       coal: 8000
     starting_buildings:
       farm: 5
@@ -227,6 +260,11 @@ items:
     starting_treasury: 8000000
     starting_resources:
       money: 8000000
+      food: 30000
+      water: 30000
+      wood: 3000
+      stone: 2000
+      weapons: 200
       oil: 80000
       gas: 30000
     starting_buildings:
@@ -244,6 +282,10 @@ items:
     starting_treasury: 4000000
     starting_resources:
       money: 4000000
+      food: 30000
+      wood: 5000
+      stone: 3000
+      weapons: 200
       iron: 30000
       coal: 30000
       uranium: 1000
@@ -262,8 +304,11 @@ items:
     starting_treasury: 4000000
     starting_resources:
       money: 4000000
-      oil: 25000
+      food: 40000
       wood: 40000
+      stone: 3000
+      weapons: 200
+      oil: 25000
       uranium: 800
     starting_buildings:
       oil_field: 2

@@ -232,9 +232,15 @@ async def cb_production(cb: CallbackQuery) -> None:
         await _safe_answer(cb)
         return
     if not buildings:
-        await _safe_edit(cb.message, 
-            "🏭 No buildings yet. Use /build to construct one.",
-            reply_markup=main_menu_keyboard(),
+        # No buildings yet — show the "build new" entry directly so the
+        # player isn't stuck on an empty screen with no way forward.
+        kb = InlineKeyboardBuilder()
+        kb.button(text="🏗 Construct building", callback_data="build:p0")
+        kb.row(back_button("menu:country"))
+        await _safe_edit(cb.message,
+            "🏭 No buildings yet. Tap below to construct one.",
+            reply_markup=kb.as_markup(),
+            parse_mode="Markdown",
         )
         await _safe_answer(cb)
         return
@@ -242,8 +248,56 @@ async def cb_production(cb: CallbackQuery) -> None:
         f"  • {b['key']} Lv{b['level']} — {b['status']}" for b in buildings
     )
     kb = InlineKeyboardBuilder()
+    kb.button(text="🏗 Construct building", callback_data="build:p0")
     kb.row(back_button("menu:country"))
     await _safe_edit(cb.message, text, reply_markup=kb.as_markup(), parse_mode="Markdown")
+    await _safe_answer(cb)
+
+
+@router.callback_query(F.data.startswith("build:"))
+async def cb_build_list(cb: CallbackQuery) -> None:
+    """Paginated list of constructable building types."""
+    from nationcraft.core.config import game_data
+    units = list(game_data.buildings.values())
+    page_idx = int(cb.data.split(":p")[1]) if ":p" in cb.data else 0
+    page = paginate(units, page_idx, page_size=8)
+    kb = paginated_keyboard(
+        page,
+        item_button=lambda b: (f"🏗 {b.name}", f"build1:{b.key}"),
+        page_callback_prefix="build",
+        back_target="menu:production",
+    )
+    await _safe_edit(cb.message, "🏗 *Choose a building to construct*", reply_markup=kb, parse_mode="Markdown")
+    await _safe_answer(cb)
+
+
+@router.callback_query(F.data.startswith("build1:"))
+async def cb_build_choose_count(cb: CallbackQuery) -> None:
+    """Choose how many copies of the building to construct."""
+    key = cb.data.split(":")[1]
+    kb = InlineKeyboardBuilder()
+    for n in [1, 5, 10]:
+        kb.button(text=f"x{n}", callback_data=f"build2:{key}:{n}")
+    kb.adjust(3)
+    kb.row(back_button("build:p0"))
+    await _safe_edit(cb.message, f"Choose count for *{key}*:", reply_markup=kb.as_markup(), parse_mode="Markdown")
+    await _safe_answer(cb)
+
+
+@router.callback_query(F.data.startswith("build2:"))
+async def cb_build_confirm(cb: CallbackQuery) -> None:
+    """Confirm construction — calls ``POST /production/build``."""
+    tid = cb.from_user.id
+    _, key, count = cb.data.split(":")
+    try:
+        result = await api_client.build(tid, key, int(count))
+        ids = result.get("building_ids", [])
+        await _safe_edit(cb.message,
+            f"✅ Construction started for {count} × {key}.\nBuilding IDs: {ids}",
+            reply_markup=main_menu_keyboard(),
+        )
+    except NationCraftError as exc:
+        await _safe_edit(cb.message, f"❌ {exc}", reply_markup=main_menu_keyboard())
     await _safe_answer(cb)
 
 

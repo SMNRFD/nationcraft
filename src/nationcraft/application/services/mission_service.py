@@ -48,20 +48,48 @@ class MissionService:
         if country is None:
             return 0
         completed = 0
+        ctx = await self._build_context(country)
         for m in missions:
             if m.status != MissionStatus.ACTIVE:
                 continue
             mdef = game_data.missions.get(m.key)
             if not mdef:
                 continue
-            ctx = await self._build_context(country)
             obj = mdef.objective
             metric = obj.get("metric")
-            target = obj.get("target")
+            target = obj.get("target", 0)
+            op = obj.get("op", ">=")
             current = ctx.get(metric, 0)
             if current is None:
                 continue
-            m.progress = min(1.0, float(current) / float(target) if target else 0.0)
+            try:
+                current_f = float(current)
+                target_f = float(target)
+            except (TypeError, ValueError):
+                continue
+            # Compute progress as a 0..1 ratio, but honor the operator
+            # for the "is complete?" check. Previously a mission with
+            # ``op: ">"`` and ``target: 0`` (e.g. tut_select_country)
+            # would never advance because ``current / 0`` was guarded by
+            # ``if target`` (0 is falsy) and fell back to progress=0.0.
+            if target_f > 0:
+                progress = max(0.0, min(1.0, current_f / target_f))
+            elif current_f > 0:
+                # target=0 with a positive current → already complete.
+                progress = 1.0
+            else:
+                progress = 0.0
+            # Override progress to 1.0 if the operator says we're done.
+            done = (
+                (op == ">" and current_f > target_f)
+                or (op == ">=" and current_f >= target_f)
+                or (op == "<" and current_f < target_f)
+                or (op == "<=" and current_f <= target_f)
+                or (op == "==" and current_f == target_f)
+            )
+            if done:
+                progress = 1.0
+            m.progress = progress
             if m.progress >= 1.0:
                 m.status = MissionStatus.COMPLETED
                 completed += 1
@@ -90,11 +118,57 @@ class MissionService:
         return rewards
 
     async def _build_context(self, country: CountryModel) -> dict:
+        """Build a context dict mapping metric names to current values.
+
+        Includes:
+        - Every resource stock for the country (money, food, water, …).
+        - Country-level numeric columns (population, treasury, approval, …).
+        - Aggregate unit counts: ``soldiers`` = sum of all land-category
+          units; per-unit-key counts (e.g. ``infantry``, ``tank``).
+
+        The ``soldiers`` aggregate is what the tutorial mission
+        ``tut_train_infantry`` checks (``metric: soldiers, target: 10``).
+        Without it the mission could never complete even after the player
+        trained 100 infantry, because the unit count lives in the
+        ``units`` table — not in ``resource_stocks``.
+
+        Note: ``research_points`` is treated as a resource stock (the
+        production tick writes it there). The ``CountryModel`` also has
+        a ``research_points`` column, but it's a legacy/dead field that
+        is never updated — so we deliberately DON'T overwrite the
+        resource stock value with the column value.
+        """
         stocks = await self.resources.list_by_country(country.id)
-        return {
+        ctx: dict[str, float | int] = {
             **{s.key: s.amount for s in stocks},
             "population": country.population,
             "treasury": country.treasury,
             "approval": country.approval,
             "stability": country.stability,
+            "corruption": country.corruption,
+            "education": country.education,
+            "healthcare": country.healthcare,
+            # NB: do NOT add ``research_points`` from country.research_points
+            # — that column is never updated by the production tick, so
+            # overwriting the resource-stock value with it would make
+            # every ``metric: research_points`` mission perpetually 0%.
         }
+        # Aggregate unit counts so missions like ``tut_train_infantry``
+        # (metric: soldiers) can see real progress.
+        try:
+            from nationcraft.infrastructure.repositories import UnitRepository
+            unit_repo = UnitRepository(self.session)
+            units = await unit_repo.list_by_country(country.id)
+            soldiers_total = 0
+            for u in units:
+                ctx[u.key] = ctx.get(u.key, 0) + u.count
+                # ``soldiers`` aggregates ALL unit categories (infantry,
+                # tanks, special forces, etc.) — that matches what
+                # players intuitively expect from the metric name.
+                soldiers_total += u.count
+            ctx["soldiers"] = soldiers_total
+        except Exception:  # noqa: BLE001
+            # Defensive: never break the tick engine because of a unit
+            # lookup failure.
+            pass
+        return ctx

@@ -38,7 +38,10 @@ class MilitaryService:
                 ResearchNodeModel.key == tech,
                 ResearchNodeModel.status == ResearchStatus.COMPLETED.value,
             )
-            if (await self.session.execute(stmt)).scalar_one_or_none() is None:
+            # Use .first() (not .scalar_one_or_none()) because a country
+            # can legitimately have multiple matching rows if data was
+            # re-seeded; we only care that AT LEAST ONE exists.
+            if (await self.session.execute(stmt)).scalars().first() is None:
                 raise GameRuleError(f"missing required tech: {tech}")
 
         # Check building prerequisites (e.g., barracks for infantry).
@@ -50,7 +53,10 @@ class MilitaryService:
                 BuildingModel.key == bk,
                 BuildingModel.status == BuildingStatus.ACTIVE.value,
             )
-            if (await self.session.execute(stmt)).scalar_one_or_none() is None:
+            # Use .first() — countries often have multiple barracks
+            # (US starts with barracks: 2). ``scalar_one_or_none()``
+            # raises MultipleResultsFound in that case.
+            if (await self.session.execute(stmt)).scalars().first() is None:
                 raise GameRuleError(f"missing required building: {bk}")
 
         # Pay cost.

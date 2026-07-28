@@ -8,9 +8,25 @@ from nationcraft.infrastructure.db.session import AsyncSessionLocal
 
 log = get_logger(__name__)
 
+# Module-level flag so ``register_default_handlers`` is a true no-op on
+# repeated calls. Without this, running ``python main.py`` (which calls
+# ``register_default_handlers`` from both the API lifespan *and* the
+# worker) would double-register every phase handler, doubling the
+# per-tick DB load and causing duplicate event-bus publishes.
+_handlers_registered = False
+
 
 def register_default_handlers() -> None:
-    """Register built-in tick handlers. Called once at app startup."""
+    """Register built-in tick handlers. Called once at app startup.
+
+    Idempotent: subsequent calls are a no-op. This matters because both
+    the API lifespan and the standalone worker call this function —
+    without idempotency the tick engine would run every phase twice
+    per tick when running all-in-one (``python main.py``).
+    """
+    global _handlers_registered
+    if _handlers_registered:
+        return
 
     async def production_phase(ctx: TickContext) -> None:
         from nationcraft.application.services.production_service import ProductionService
@@ -65,4 +81,5 @@ def register_default_handlers() -> None:
     tick_engine.register(TickPhases.POPULATION, "default", population_phase)
     tick_engine.register(TickPhases.EVENTS, "default", events_phase)
     tick_engine.register(TickPhases.MISSIONS, "default", missions_phase)
+    _handlers_registered = True
     log.info("tick.handlers.registered")

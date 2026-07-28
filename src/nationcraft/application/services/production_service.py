@@ -118,6 +118,11 @@ class ProductionService:
         """Compute and apply production/consumption for every active building.
 
         Returns a dict mapping ``country_id`` → applied net deltas.
+
+        Buildings whose required input resources are unavailable now
+        produce at a proportional rate (or 0 if inputs are fully
+        missing). Previously a steel_mill with 0 iron/coal still
+        produced full steel — a free-resource exploit.
         """
         stmt = (
             select(BuildingModel, CountryModel)
@@ -144,6 +149,25 @@ class ProductionService:
             # Ensure all stocks exist.
             for k in list(prod.keys()) + list(cons.keys()):
                 await self.resources.ensure_stock(country.id, world_id, k)
+            # Throttle production if any input is short. ``availability``
+            # is the minimum ratio of (have / need) across all consumed
+            # resources — clamped to [0, 1]. If a building needs 30 iron
+            # and only 15 is in stock, availability = 0.5 → production
+            # is halved and consumption is halved too (so the mill runs
+            # at 50% capacity rather than producing full output for free).
+            availability = 1.0
+            if cons:
+                for k, needed in cons.items():
+                    if needed <= 0:
+                        continue
+                    have = await self.resources.get_amount(country.id, k)
+                    ratio = have / needed if needed > 0 else 1.0
+                    availability = min(availability, ratio)
+                availability = max(0.0, min(1.0, availability))
+                # Scale both sides by availability so partial-input
+                # buildings run at partial capacity.
+                prod = {k: v * availability for k, v in prod.items()}
+                cons = {k: v * availability for k, v in cons.items()}
             # First consume, then produce.
             net = {k: -v for k, v in cons.items()}
             for k, v in prod.items():
@@ -180,7 +204,10 @@ class ProductionService:
             ResearchNodeModel.key == tech_key,
             ResearchNodeModel.status == ResearchStatus.COMPLETED.value,
         )
-        return (await self.session.execute(stmt)).scalar_one_or_none() is not None
+        # Use .scalars().first() (not .scalar_one_or_none()) — a country
+        # can legitimately have multiple matching rows if data was
+        # re-seeded; we only care that AT LEAST ONE exists.
+        return (await self.session.execute(stmt)).scalars().first() is not None
 
     async def _has_building(self, country_id: int, key: str) -> bool:
         stmt = select(BuildingModel).where(
@@ -188,4 +215,6 @@ class ProductionService:
             BuildingModel.key == key,
             BuildingModel.status == BuildingStatus.ACTIVE.value,
         )
-        return (await self.session.execute(stmt)).scalar_one_or_none() is not None
+        # Same as _has_tech — countries often have multiple of the same
+        # building (e.g. 5 farms, 2 barracks).
+        return (await self.session.execute(stmt)).scalars().first() is not None

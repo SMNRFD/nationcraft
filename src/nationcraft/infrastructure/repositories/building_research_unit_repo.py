@@ -8,6 +8,7 @@ from nationcraft.domain.entities import Building, ResearchNode, Unit
 from nationcraft.domain.enums import BuildingStatus, ResearchStatus, UnitState
 from nationcraft.infrastructure.db.models import (
     BuildingModel,
+    CountryModel,
     ResearchNodeModel,
     UnitModel,
 )
@@ -154,8 +155,16 @@ class UnitRepository:
     async def adjust(self, country_id: int, key: str, delta: int) -> Unit:
         existing = await self.get(country_id, key)
         if existing is None:
+            # Resolve the real world_id from the country so the FK
+            # constraint (units.world_id -> worlds.id) is satisfied.
+            # Previously this hardcoded world_id=0 which (a) breaks
+            # referential integrity and (b) makes world-scoped unit
+            # queries (used by rankings, war resolution, tick engine)
+            # silently miss every newly-created unit row.
+            country = await self.session.get(CountryModel, country_id)
+            world_id = country.world_id if country else 0
             m = UnitModel(
-                world_id=0,
+                world_id=world_id,
                 country_id=country_id,
                 key=key,
                 count=max(0, delta),

@@ -23,8 +23,19 @@ class PopulationService:
         )
         for country in rows:
             scale = delta_seconds / 60.0
-            food_need = country.population * 0.0005 * scale
-            water_need = country.population * 0.0007 * scale
+            # Per-capita consumption rates. Tuned so a starting country
+            # with ~5 farms (250 food/min) can sustain roughly 50M
+            # people. The previous rates (0.0005 / 0.0007) made a
+            # 125M-population country like Japan burn 62,500 food per
+            # minute vs. only 200 produced by its 4 farms — every
+            # country starved within 2 ticks of joining.
+            #
+            # New math: 125M * 0.000002 = 250 food/min (vs 200 produced
+            # = small deficit that the player must close by building
+            # more farms). Water: 125M * 0.000003 = 375/min vs 90 from
+            # 3 wells — deficit too, but smaller.
+            food_need = country.population * 0.000002 * scale
+            water_need = country.population * 0.000003 * scale
             food_have = await self.resources.get_amount(country.id, "food")
             water_have = await self.resources.get_amount(country.id, "water")
 

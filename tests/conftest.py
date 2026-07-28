@@ -10,11 +10,16 @@ import pytest_asyncio
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 # Configure test environment BEFORE importing nationcraft modules.
-os.environ.setdefault("ENV", "test")
-os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///:memory:")
-os.environ.setdefault("REDIS_URL", "redis://localhost:6379/15")
-os.environ.setdefault("SECRET_KEY", "test-secret-only-32-bytes-padding!!")
-os.environ.setdefault("TELEGRAM_BOT_TOKEN", "0:test")
+# We FORCE-set (not setdefault) so that any DATABASE_URL exported in the
+# surrounding shell — e.g. ``DATABASE_URL=file:/somewhere/custom.db`` —
+# cannot leak into the test suite and cause confusing failures
+# (the production engine is built at import time and would otherwise
+# try to connect to whatever the shell said, breaking every test).
+os.environ["ENV"] = "test"
+os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///:memory:"
+os.environ["REDIS_URL"] = "redis://localhost:6379/15"
+os.environ["SECRET_KEY"] = "test-secret-only-32-bytes-padding!!"
+os.environ["TELEGRAM_BOT_TOKEN"] = "0:test"
 
 from nationcraft.infrastructure.db.models import Base  # noqa: E402
 
