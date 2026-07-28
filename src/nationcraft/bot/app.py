@@ -48,6 +48,35 @@ async def run_bot(use_webhook: bool = False) -> None:
     )
     dp = build_dispatcher()
 
+    # Pre-flight check: verify the API is reachable before starting
+    # polling. If the API is down, every bot command will fail with
+    # "Cannot reach the game server" — better to warn now so the user
+    # knows to fix it.
+    import httpx
+    api_reachable = False
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as _c:
+            r = await _c.get(f"{api_client.base_url}/health")
+            if r.status_code == 200:
+                api_reachable = True
+                log.info("bot.api.reachable", url=api_client.base_url)
+            else:
+                log.warning(
+                    "bot.api.unreachable",
+                    url=api_client.base_url,
+                    status=r.status_code,
+                    hint="Run `python main.py --local` (not --only bot) "
+                         "and `python main.py --local --initdb` first.",
+                )
+    except Exception as exc:  # noqa: BLE001
+        log.warning(
+            "bot.api.unreachable",
+            url=api_client.base_url,
+            error=str(exc)[:200],
+            hint="Run `python main.py --local` (not --only bot) "
+                 "and `python main.py --local --initdb` first.",
+        )
+
     if use_webhook and settings.TELEGRAM_WEBHOOK_URL:
         await bot.set_webhook(
             settings.TELEGRAM_WEBHOOK_URL,
@@ -56,7 +85,7 @@ async def run_bot(use_webhook: bool = False) -> None:
         log.info("bot.webhook.set", url=settings.TELEGRAM_WEBHOOK_URL)
     else:
         me = await bot.get_me()
-        log.info("bot.start", username=me.username, id=me.id)
+        log.info("bot.start", username=me.username, id=me.id, api_reachable=api_reachable)
         try:
             await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
         finally:

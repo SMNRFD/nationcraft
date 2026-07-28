@@ -158,22 +158,48 @@ async def cmd_status(message: Message, state: FSMContext, locale: str = "en") ->
     has_refresh = api_client.get_refresh_token(user.id) is not None
     is_admin = user.id in settings.admin_ids if hasattr(settings, 'admin_ids') else False
 
-    # Test API connectivity
+    # Test API connectivity — try both /health and /health/ready
     api_status = "unknown"
     api_latency_ms = None
+    api_detail = ""
     try:
         import time as _time
         start = _time.perf_counter()
-        async with httpx.AsyncClient(timeout=3.0) as _c:
+        async with httpx.AsyncClient(timeout=5.0) as _c:
             r = await _c.get(f"{api_client.base_url}/health")
             elapsed = (_time.perf_counter() - start) * 1000
             if r.status_code == 200:
                 api_status = "ok"
                 api_latency_ms = round(elapsed)
+                # Also check /health/ready for DB status
+                try:
+                    r2 = await _c.get(f"{api_client.base_url}/health/ready", timeout=3.0)
+                    if r2.status_code == 200:
+                        ready = r2.json()
+                        checks = ready.get("checks", {})
+                        db_status = checks.get("db", "unknown")
+                        api_detail = f"\n   DB: {db_status}"
+                        if ready.get("status") == "degraded":
+                            api_detail += " ⚠️ degraded"
+                except Exception:
+                    pass
             else:
                 api_status = f"http_{r.status_code}"
+                api_detail = f"\n   Response: {r.text[:100]}"
+    except httpx.ConnectError as e:
+        api_status = "unreachable"
+        api_detail = f"\n   Connection refused. Is the API running?"
+        api_detail += f"\n   Error: {type(e).__name__}: {str(e)[:100]}"
+    except httpx.TimeoutException:
+        api_status = "timeout"
+        api_detail = f"\n   API did not respond within 5 seconds."
     except Exception as e:
-        api_status = f"unreachable: {type(e).__name__}"
+        api_status = f"error: {type(e).__name__}"
+        api_detail = f"\n   {str(e)[:150]}"
+
+    # Check if DATABASE_URL looks valid
+    db_url = settings.DATABASE_URL or "(not set)"
+    db_ok = bool(db_url) and "://" in db_url
 
     text = (
         f"🔍 *Bot status*\n\n"
@@ -185,10 +211,21 @@ async def cmd_status(message: Message, state: FSMContext, locale: str = "en") ->
         f"🌐 API URL: `{api_client.base_url}`\n"
         f"📡 API status: {api_status}"
         + (f" ({api_latency_ms}ms)" if api_latency_ms is not None else "")
+        + api_detail
         + "\n"
+        f"🗄 DB URL: `{db_url[:60]}{'...' if len(db_url) > 60 else ''}`\n"
         f"🌍 Locale: {_language_label(locale)}\n"
     )
-    await message.answer(text, parse_mode="Markdown", reply_markup=main_menu_keyboard())
+
+    if api_status != "ok":
+        text += (
+            f"\n⚠️ *Diagnosis:*\n"
+            f"The API is not reachable. Make sure you started the game with:\n"
+            f"  `python main.py --local`\n"
+            f"(NOT `--only bot` — that skips the API server.)\n"
+            f"Also run `python main.py --local --initdb` first to create the database."
+        )
+    await safe_send(message, text, parse_mode="Markdown", reply_markup=main_menu_keyboard())
 
 
 @router.message(Command("language"))
@@ -312,8 +349,12 @@ async def process_register(message: Message, state: FSMContext, locale: str = "e
         if is_transient_error(exc):
             # Network error (502, 503, timeout) — DON'T clear state
             # so the user can retry by sending the password again.
+            # Include the actual error so the user can diagnose.
             await message.answer(
-                _("errors.api_unreachable", locale=locale),
+                f"⚠️ Cannot reach the game server.\n\n"
+                f"Error: {exc.code} — {str(exc)[:150]}\n\n"
+                f"Make sure you ran `python main.py --local` (not just --only bot). "
+                f"Type /status to diagnose. You can retry by sending the password again.",
                 reply_markup=main_menu_keyboard(),
             )
             return
@@ -325,11 +366,20 @@ async def process_register(message: Message, state: FSMContext, locale: str = "e
         )
         return
     except Exception as exc:  # noqa: BLE001
-        # Unexpected error — DON'T clear state on transient errors
-        # so the user can retry. Clear on definitive failures.
+        # Unexpected error — DON'T clear state so the user can retry.
+        # Show the actual error type and message so the user (and
+        # developer) can diagnose what's wrong. Previously this showed
+        # a generic "Cannot reach the game server" which hid the real
+        # cause (e.g. KeyError from a malformed API response, an
+        # import error, a Python 3.14 compatibility issue, etc.).
         log.exception("bot.register.failed", error=str(exc))
+        exc_type = type(exc).__name__
+        exc_msg = str(exc)[:200] or "(no message)"
         await message.answer(
-            _("errors.api_unreachable", locale=locale),
+            f"⚠️ Registration failed.\n\n"
+            f"Error: {exc_type}: {exc_msg}\n\n"
+            f"Check the server console for the full traceback. "
+            f"Type /status to diagnose. You can retry by sending the password again.",
             reply_markup=main_menu_keyboard(),
         )
         return
@@ -363,7 +413,10 @@ async def process_login(message: Message, state: FSMContext, locale: str = "en")
         if is_transient_error(exc):
             # Network error — DON'T clear state, user can retry.
             await message.answer(
-                _("errors.api_unreachable", locale=locale),
+                f"⚠️ Cannot reach the game server.\n\n"
+                f"Error: {exc.code} — {str(exc)[:150]}\n\n"
+                f"Make sure you ran `python main.py --local` (not just --only bot). "
+                f"Type /status to diagnose. You can retry by sending the password again.",
                 reply_markup=main_menu_keyboard(),
             )
             return
@@ -376,8 +429,13 @@ async def process_login(message: Message, state: FSMContext, locale: str = "en")
         return
     except Exception as exc:  # noqa: BLE001
         log.exception("bot.login.failed", error=str(exc))
+        exc_type = type(exc).__name__
+        exc_msg = str(exc)[:200] or "(no message)"
         await message.answer(
-            _("errors.api_unreachable", locale=locale),
+            f"⚠️ Login failed.\n\n"
+            f"Error: {exc_type}: {exc_msg}\n\n"
+            f"Check the server console for the full traceback. "
+            f"Type /status to diagnose. You can retry by sending the password again.",
             reply_markup=main_menu_keyboard(),
         )
         return

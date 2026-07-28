@@ -254,13 +254,31 @@ class ApiClient:
         data = await self._request("POST", "/auth/register",
                                   json={"telegram_id": telegram_id, "password": password,
                                         "username": username, "locale": locale})
-        self.set_tokens(telegram_id, data["access_token"], data.get("refresh_token"))
+        # Defensive: if the API returned a valid response but without
+        # the expected access_token field, raise a clear error instead
+        # of a cryptic KeyError that gets caught by the generic
+        # ``except Exception`` handler in the bot.
+        access = data.get("access_token")
+        if not access:
+            raise NationCraftError(
+                f"registration succeeded but no access_token in response. "
+                f"Response keys: {list(data.keys())}",
+                code="api_error", status_code=502,
+            )
+        self.set_tokens(telegram_id, access, data.get("refresh_token"))
         return data
 
     async def login(self, telegram_id: int, password: str) -> dict:
         data = await self._request("POST", "/auth/login",
                                   json={"telegram_id": telegram_id, "password": password})
-        self.set_tokens(telegram_id, data["access_token"], data.get("refresh_token"))
+        access = data.get("access_token")
+        if not access:
+            raise NationCraftError(
+                f"login succeeded but no access_token in response. "
+                f"Response keys: {list(data.keys())}",
+                code="api_error", status_code=502,
+            )
+        self.set_tokens(telegram_id, access, data.get("refresh_token"))
         return data
 
     async def logout(self, telegram_id: int) -> None:

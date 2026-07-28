@@ -1,0 +1,81 @@
+MY CONFIG:
+# ====================================================================
+# NationCraft environment configuration
+# Copy to .env and adjust values for your deployment.
+# ====================================================================
+
+# ---- Runtime ----
+ENV=production
+LOG_LEVEL=INFO
+LOG_FORMAT=json
+SECRET_KEY=740adc1a240cf0f06c08e0ef218fa20c6c5eed55b950fd521890c76c5641b5a4
+JWT_ISSUER=nationcraft
+JWT_ACCESS_TTL_SECONDS=900
+JWT_REFRESH_TTL_SECONDS=2592000
+ARGON2_MEMORY_KIB=65536
+ARGON2_ITERATIONS=3
+ARGON2_PARALLELISM=2
+
+# ---- Database ----
+# Production (Postgres):
+#   DATABASE_URL=postgresql+asyncpg://nationcraft:nationcraft@postgres:5432/nationcraft
+# Local dev without Docker (file-based SQLite — created automatically):
+#   DATABASE_URL=sqlite+aiosqlite:///nationcraft.db
+# In-memory SQLite (tests only — schema not persisted across requests):
+#   DATABASE_URL=sqlite+aiosqlite:///:memory:
+POSTGRES_HOST=postgres
+POSTGRES_PORT=5432
+POSTGRES_USER=nationcraft
+POSTGRES_PASSWORD=nationcraft
+POSTGRES_DB=nationcraft
+DATABASE_URL=postgresql+asyncpg://nationcraft:nationcraft@postgres:5432/nationcraft
+DB_POOL_SIZE=20
+DB_MAX_OVERFLOW=20
+DB_POOL_TIMEOUT=30
+
+# ---- Redis ----
+REDIS_HOST=redis
+REDIS_PORT=6379
+REDIS_DB=0
+REDIS_PASSWORD=
+REDIS_URL=redis://redis:6379/0
+
+# ---- API ----
+API_HOST=0.0.0.0
+API_PORT=8000
+API_WORKERS=4
+API_BASE_URL=http://api:8000
+
+# ---- Telegram ----
+TELEGRAM_BOT_TOKEN=8937387510:AAHD1jM_I4fNE8H1_FRwN9S2b7ajw4_1Xis
+TELEGRAM_WEBHOOK_URL=
+TELEGRAM_WEBHOOK_SECRET=
+TELEGRAM_ADMIN_IDS=8478981617
+TELEGRAM_API_BASE=https://api.telegram.org
+
+# ---- Game ----
+TICK_INTERVAL_SECONDS=60
+WORLD_PLAYER_CAPACITY=200
+WORLD_AUTO_CREATE=true
+DEFAULT_LOCALE=en
+SUPPORTED_LOCALES=en,fa
+
+# ---- Plugin system ----
+PLUGINS_ENABLED=true
+PLUGINS_DIRS=plugins
+
+# ---- Rate limiting ----
+RATE_LIMIT_LOGIN_PER_MINUTE=5
+RATE_LIMIT_API_PER_MINUTE=300
+RATE_LIMIT_BOT_PER_USER_PER_MINUTE=120
+
+# ---- Backups ----
+BACKUP_DIR=/var/lib/nationcraft/backups
+BACKUP_RETENTION_DAYS=14
+
+---
+
+LOGS IN THE PASTED CONTENT.
+READ IT COMPLETE AND FIX ALL BUGS AND PROBLEMS.
+AND MAKE SURE THE LANGUAGE CHANGE APPLYING WORK.
+FULLY COMPLETE DEEPLY FIX ALL THE BUGS AND PROBLEMS.
