@@ -7,6 +7,7 @@ can register their own phase handlers via the hook
 """
 from __future__ import annotations
 
+import asyncio
 import time
 from dataclasses import dataclass, field
 from typing import Any, Awaitable, Callable
@@ -55,6 +56,9 @@ class TickEngine:
             if ctx.skip_remaining:
                 break
             await self._run_phase(phase, ctx)
+            # Yield control to the event loop between phases so the API
+            # and bot can process requests during long ticks.
+            await asyncio.sleep(0)
         await event_bus.publish(Event(
             type="tick.finished",
             world_id=ctx.world_id,

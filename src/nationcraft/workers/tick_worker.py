@@ -9,15 +9,13 @@ log = get_logger(__name__)
 
 
 async def run_worker() -> None:
-    """Initialize handlers and start the tick runner."""
-    # Discover and load plugins so their tick hooks are registered.
-    from nationcraft.core.config import settings
-    if settings.PLUGINS_ENABLED:
-        from nationcraft.core.plugins import PluginLoader
-        loader = PluginLoader(settings.plugins_dirs_list)
-        loader.discover()
-        loader.load_all()
-    # Register default built-in tick handlers.
+    """Initialize handlers and start the tick runner.
+
+    NOTE: Plugins are loaded by the API lifespan, NOT here. When
+    running ``python main.py`` (all-in-one), the API lifespan loads
+    plugins once. Loading them again here would double-register hooks
+    and cause duplicate tick execution.
+    """
     register_default_handlers()
     log.info("worker.start")
     runner = TickRunner()

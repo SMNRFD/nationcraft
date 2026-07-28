@@ -130,7 +130,7 @@ class ProductionService:
         )
         rows = (await self.session.execute(stmt)).all()
         net_by_country: dict[int, dict[str, float]] = {}
-        for b, country in rows:
+        for i, (b, country) in enumerate(rows):
             bdef = game_data.buildings.get(b.key)
             if bdef is None:
                 continue
@@ -153,6 +153,11 @@ class ProductionService:
                 net_by_country.setdefault(country.id, {})
                 for k, v in net.items():
                     net_by_country[country.id][k] = net_by_country[country.id].get(k, 0.0) + v
+            # Yield control every 10 buildings so the event loop can
+            # process API/bot requests during long ticks.
+            if i > 0 and i % 10 == 0:
+                import asyncio
+                await asyncio.sleep(0)
         await event_bus.publish(Event(
             type="production.tick", world_id=world_id,
             payload={"countries": len(net_by_country)},

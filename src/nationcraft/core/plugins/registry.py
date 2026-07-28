@@ -84,6 +84,11 @@ class PluginRegistry:
 
     def _load_one(self, rec: PluginRecord, config: dict[str, Any]) -> None:
         manifest = rec.manifest
+        # Skip if already enabled (idempotent — prevents double-loading
+        # when both the API lifespan and the worker call load_all()).
+        if rec.state == PluginState.ENABLED:
+            log.debug("plugin.already_loaded", plugin=manifest.id)
+            return
         # Load module from file path for directory plugins, or via dotted path.
         module_path = manifest.module or f"{manifest.id}.plugin"
         try:
