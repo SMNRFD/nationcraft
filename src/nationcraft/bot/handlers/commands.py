@@ -1,4 +1,4 @@
-"""Command handlers: /start, /help, /login, /register, /play, /cancel, /language, /resetpassword, /panel.
+"""Command handlers: /start, /help, /login, /register, /play, /cancel, /language, /resetpassword, /panel, /status, /logout.
 
 IMPORTANT: All command handlers are registered BEFORE state handlers.
 This ensures that commands like /login, /cancel, /panel work even when
@@ -9,6 +9,7 @@ starting with ``/``) so they only catch plain text messages.
 """
 from __future__ import annotations
 
+import httpx
 from aiogram import F, Router
 from aiogram.filters import Command, CommandStart
 from aiogram.fsm.context import FSMContext
@@ -17,6 +18,7 @@ from aiogram.types import Message
 from nationcraft.bot.api_client import api_client
 from nationcraft.bot.handlers.states.auth import AuthStates
 from nationcraft.bot.keyboards import InlineKeyboardBuilder, main_menu_keyboard
+from nationcraft.core.config import settings
 from nationcraft.core.exceptions import NationCraftError
 from nationcraft.core.i18n import _
 from nationcraft.core.logging import get_logger
@@ -136,10 +138,56 @@ async def cmd_logout(message: Message, state: FSMContext, locale: str = "en") ->
     )
 
 
+@router.message(Command("status"))
+async def cmd_status(message: Message, state: FSMContext, locale: str = "en") -> None:
+    """Show diagnostic info: FSM state, token presence, API connectivity.
+
+    Useful for users to debug issues like 'I can't log in' or 'the bot
+    says I'm not authenticated but I registered'.
+    """
+    await state.clear()
+    user = message.from_user
+    current_state = await state.get_state()
+    has_access = api_client.get_token(user.id) is not None
+    has_refresh = api_client.get_refresh_token(user.id) is not None
+    is_admin = user.id in settings.admin_ids if hasattr(settings, 'admin_ids') else False
+
+    # Test API connectivity
+    api_status = "unknown"
+    api_latency_ms = None
+    try:
+        import time as _time
+        start = _time.perf_counter()
+        async with httpx.AsyncClient(timeout=3.0) as _c:
+            r = await _c.get(f"{api_client.base_url}/health")
+            elapsed = (_time.perf_counter() - start) * 1000
+            if r.status_code == 200:
+                api_status = "ok"
+                api_latency_ms = round(elapsed)
+            else:
+                api_status = f"http_{r.status_code}"
+    except Exception as e:
+        api_status = f"unreachable: {type(e).__name__}"
+
+    text = (
+        f"🔍 *Bot status*\n\n"
+        f"👤 Telegram ID: `{user.id}`\n"
+        f"🎭 Admin: {is_admin}\n"
+        f"🔖 FSM state: `{current_state or 'none'}`\n"
+        f"🔑 Access token: {'✅ present' if has_access else '❌ missing'}\n"
+        f"🔄 Refresh token: {'✅ present' if has_refresh else '❌ missing'}\n"
+        f"🌐 API URL: `{api_client.base_url}`\n"
+        f"📡 API status: {api_status}"
+        + (f" ({api_latency_ms}ms)" if api_latency_ms is not None else "")
+        + "\n"
+        f"🌍 Locale: {_language_label(locale)}\n"
+    )
+    await message.answer(text, parse_mode="Markdown", reply_markup=main_menu_keyboard())
+
+
 @router.message(Command("language"))
 async def cmd_language(message: Message, state: FSMContext, locale: str = "en") -> None:
     await state.clear()
-    from nationcraft.core.config import settings
     kb = InlineKeyboardBuilder()
     for loc in settings.supported_locales_list:
         label = f"✓ {_language_label(loc)}" if loc == locale else _language_label(loc)
@@ -184,15 +232,20 @@ async def cmd_panel(message: Message, state: FSMContext, locale: str = "en") -> 
         await message.answer(_("errors.api_unreachable", locale=locale))
         return
 
-    # ``get_me`` swallows auth/network errors and returns None — handle that
-    # explicitly to avoid an AttributeError on ``player.get(...)`` below.
+    # ``get_me`` returns None on auth OR network errors. We must
+    # distinguish:
+    # - If the token is still in api_client._tokens, get_me returned
+    #   None due to a network error — DON'T clear the token, just tell
+    #   the user the API is unreachable.
+    # - If the token is gone (evicted by _request on 401 after refresh
+    #   failed), it was an auth error — tell the user to log in again.
     if not player:
-        # The token exists locally but the API rejected it (probably
-        # expired). Drop it so the next /panel attempt shows the friendly
-        # "must /login first" prompt and the middleware stops sending
-        # a dead token.
-        api_client.clear_token(user.id)
-        await message.answer(_("auth.must_login_first", locale=locale))
+        if api_client.get_token(user.id) is None:
+            # Auth failed (token was evicted). Tell user to log in.
+            await message.answer(_("auth.must_login_first", locale=locale))
+            return
+        # Network error — token is still valid. Don't log the user out.
+        await message.answer(_("errors.api_unreachable", locale=locale))
         return
 
     role_label = {

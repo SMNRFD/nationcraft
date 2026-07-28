@@ -35,11 +35,13 @@ help:
     /start — main menu
     /register — create account
     /login — sign in
+    /logout — sign out (revoke session)
     /play — open the game dashboard
     /cancel — abort current action
     /language — switch language
     /resetpassword — change your password
     /panel — user control panel
+    /status — show bot diagnostics (token, API, FSM state)
 
 auth:
   register_prompt: "Please choose a password (min 8 chars). I will hash it with Argon2id."

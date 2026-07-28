@@ -35,11 +35,13 @@ help:
     /start — منوی اصلی
     /register — ساخت حساب
     /login — ورود
+    /logout — خروج (ابطال نشست)
     /play — باز کردن داشبورد بازی
     /cancel — لغو عملیات فعلی
     /language — تغییر زبان
     /resetpassword — تغییر رمز عبور
     /panel — پنل کاربری
+    /status — نمایش وضعیت ربات (توکن، API، FSM)
 
 auth:
   register_prompt: "یک رمز عبور انتخاب کنید (حداقل ۸ کاراکتر). با Argon2id هش می‌شود."

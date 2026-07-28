@@ -147,6 +147,108 @@ def test_api_client_timeout_is_bounded():
     assert _DEFAULT_TIMEOUT.connect == pytest.approx(2.0)
 
 
+def test_api_client_base_url_picks_up_local_override():
+    """ApiClient.base_url should be dynamic — picking up settings changes.
+
+    Bug: with `.env` setting API_BASE_URL=http://api:8000 (Docker
+    hostname), running `python main.py --local` updated
+    settings.API_BASE_URL but NOT api_client.base_url, so the bot kept
+    trying to reach the Docker hostname and failed.
+    """
+    import os
+    from nationcraft.bot.api_client import ApiClient
+    from nationcraft.core.config import settings as _settings
+
+    # Simulate initial state (e.g., Docker .env): API_BASE_URL=http://api:8000
+    _settings.API_BASE_URL = "http://api:8000"
+    client = ApiClient()
+    assert client.base_url == "http://api:8000", f"expected http://api:8000, got {client.base_url}"
+
+    # Now simulate --local override: settings.API_BASE_URL changes to localhost
+    _settings.API_BASE_URL = "http://localhost:8000"
+    # The api_client.base_url should reflect the new value (dynamic property).
+    assert client.base_url == "http://localhost:8000", (
+        f"expected http://localhost:8000 after override, got {client.base_url}"
+    )
+
+    # Restore for other tests
+    _settings.API_BASE_URL = "http://localhost:8000"
+
+
+@pytest.mark.asyncio
+async def test_api_client_get_me_preserves_token_on_network_error():
+    """get_me should NOT clear the token on network errors.
+
+    Bug: previously, get_me returned None on any error (auth or network),
+    and cmd_panel would clear the token. This logged the user out on
+    every transient API hiccup. Now: the token stays in self._tokens
+    on network errors; only auth errors (401) evict it via _request.
+    """
+    from nationcraft.bot.api_client import ApiClient
+    from nationcraft.core.exceptions import NationCraftError
+
+    client = ApiClient(base_url="http://test")
+    client.set_tokens(telegram_id=42, access_token="valid-tok", refresh_token="valid-ref")
+
+    # Mock httpx to raise a network error
+    import httpx
+    mock_client = AsyncMock()
+    async def _raise_network(*args, **kwargs):
+        raise httpx.ConnectError("DNS resolution failed")
+    mock_client.request = _raise_network
+    mock_client.is_closed = False
+    client._client = mock_client
+
+    # get_me should return None (network error)
+    result = await client.get_me(42)
+    assert result is None
+
+    # But the token should still be present (NOT cleared)
+    assert client.get_token(42) == "valid-tok"
+    assert client.get_refresh_token(42) == "valid-ref"
+
+
+@pytest.mark.asyncio
+async def test_api_client_get_me_clears_token_on_401():
+    """get_me on a 401 response should leave the token evicted (done by _request)."""
+    from nationcraft.bot.api_client import ApiClient
+    from unittest.mock import MagicMock
+
+    client = ApiClient(base_url="http://test")
+    client.set_tokens(telegram_id=42, access_token="expired-tok", refresh_token="valid-ref")
+
+    # Mock httpx to return 401 (no refresh token works)
+    unauth_resp = MagicMock()
+    unauth_resp.status_code = 401
+    unauth_resp.json.return_value = {"ok": False, "error": {"code": "authentication_failed"}}
+
+    # Refresh also fails
+    refresh_fail = MagicMock()
+    refresh_fail.status_code = 401
+    refresh_fail.json.return_value = {"ok": False, "error": {"code": "authentication_failed"}}
+
+    call_count = {"n": 0}
+    async def _mock_request(method, url, headers=None, json=None):
+        call_count["n"] += 1
+        if "refresh" in url:
+            return refresh_fail
+        return unauth_resp
+
+    mock_client = AsyncMock()
+    mock_client.request = _mock_request
+    mock_client.post = AsyncMock(return_value=refresh_fail)
+    mock_client.is_closed = False
+    client._client = mock_client
+
+    # get_me should return None (auth error)
+    result = await client.get_me(42)
+    assert result is None
+
+    # Both tokens should be evicted (refresh failed)
+    assert client.get_token(42) is None
+    assert client.get_refresh_token(42) is None
+
+
 # ---------------------------------------------------------------------
 # PluginRegistry.add idempotency
 # ---------------------------------------------------------------------

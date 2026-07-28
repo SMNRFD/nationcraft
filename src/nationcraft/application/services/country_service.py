@@ -58,8 +58,8 @@ class CountryService:
                 await self.resources.set_amount(country.id, key, amount)
             # Seed starting buildings (mark as active immediately).
             from datetime import datetime, timezone
-            from nationcraft.domain.enums import BuildingStatus
-            from nationcraft.infrastructure.db.models import BuildingModel
+            from nationcraft.domain.enums import BuildingStatus, ResearchStatus
+            from nationcraft.infrastructure.db.models import BuildingModel, ResearchNodeModel
             for bkey, count in cdef.starting_buildings.items():
                 for _ in range(count):
                     self.session.add(BuildingModel(
@@ -70,6 +70,28 @@ class CountryService:
                         status=BuildingStatus.ACTIVE.value,
                         started_at=datetime.now(timezone.utc),
                         completes_at=None,
+                    ))
+            # Seed starting technologies (mark as completed immediately).
+            # Bug: this was missing — players who selected a country with
+            # starting_technologies never got those techs, so they
+            # couldn't build anything that required them.
+            for tech_key in cdef.starting_technologies:
+                # Don't re-create if already exists from a prior assignment.
+                existing = await self.session.scalar(
+                    select(ResearchNodeModel).where(
+                        ResearchNodeModel.country_id == country.id,
+                        ResearchNodeModel.key == tech_key,
+                    )
+                )
+                if existing is None:
+                    self.session.add(ResearchNodeModel(
+                        world_id=world_id,
+                        country_id=country.id,
+                        key=tech_key,
+                        status=ResearchStatus.COMPLETED.value,
+                        progress=100.0,
+                        started_at=datetime.now(timezone.utc),
+                        completes_at=datetime.now(timezone.utc),
                     ))
             await self.session.flush()
 

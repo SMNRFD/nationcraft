@@ -39,7 +39,15 @@ class ApiClient:
     """Wraps REST calls to the backend, with auto token + refresh handling."""
 
     def __init__(self, base_url: str | None = None) -> None:
-        self.base_url = (base_url or settings.API_BASE_URL).rstrip("/")
+        # If base_url is provided, use it. Otherwise, read it dynamically
+        # from settings on each request so that --local overrides are
+        # picked up even if the singleton was created before the override
+        # was applied. This was a real bug: with `.env` setting
+        # API_BASE_URL=http://api:8000 (Docker hostname), running
+        # `python main.py --local` updated settings.API_BASE_URL but
+        # NOT api_client.base_url, so the bot kept trying to reach the
+        # Docker hostname and failed.
+        self._explicit_base_url = base_url
         # telegram_id -> access_token (short-lived JWT, exp in 15min)
         self._tokens: dict[int, str] = {}
         # telegram_id -> refresh_token (long-lived JWT, exp in 30d)
@@ -49,6 +57,15 @@ class ApiClient:
         self._refresh_locks: dict[int, asyncio.Lock] = {}
         self._client: httpx.AsyncClient | None = None
         self._client_lock = asyncio.Lock()
+
+    @property
+    def base_url(self) -> str:
+        """Dynamic base URL — always reads from settings unless an
+        explicit base_url was passed to __init__.
+        """
+        if self._explicit_base_url:
+            return self._explicit_base_url.rstrip("/")
+        return (settings.API_BASE_URL or "http://localhost:8000").rstrip("/")
 
     async def _get_client(self) -> httpx.AsyncClient:
         """Lazily create a shared httpx client with bounded timeouts.
@@ -249,12 +266,24 @@ class ApiClient:
     async def get_me(self, telegram_id: int) -> dict | None:
         """Return the current player's profile (locale, role, etc.).
 
-        Returns None on auth errors (401, network) — caller should treat
-        None as "not logged in or unreachable".
+        Returns the player dict on success. Returns None on:
+        - Network errors (api_unreachable, api_timeout) — the token is
+          PRESERVED because the API might just be slow/unreachable.
+        - Auth errors (401, token expired/revoked) — the token is
+          already evicted by ``_request`` (and refresh is attempted).
+
+        Callers should NOT clear the local token just because
+        ``get_me`` returned None — that would log the user out on every
+        transient network blip. Use ``get_token`` to check if the
+        token is still present (it'll be None if auth failed, present
+        if only a network error occurred).
         """
         try:
             return await self._request("GET", "/auth/me", telegram_id=telegram_id)
         except NationCraftError:
+            # If it was a 401, _request already evicted the token (and
+            # attempted refresh). If it was a network/timeout error,
+            # the token is still in self._tokens.
             return None
         except Exception:  # noqa: BLE001
             return None
