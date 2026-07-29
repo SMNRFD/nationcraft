@@ -293,6 +293,21 @@ async def run_all(host: str, port: int, use_webhook: bool = False) -> None:
          ugly ``asyncio.CancelledError`` traceback that uvicorn's lifespan
          handler prints when cancelled mid-await.
     """
+    # Mark that the bot and API share one event loop so the bot's
+    # api_client can short-circuit HTTP calls to /health etc. This
+    # eliminates the failure mode where the bot blocks the event loop
+    # with a slow Telegram send, then the bot's HTTP call to localhost
+    # can't be answered by the API until the loop is free → 15s
+    # httpx.ReadTimeout → "api_timeout" error shown to the user.
+    from nationcraft.bot.api_client import set_in_process_api
+
+    def _is_api_serving() -> bool:
+        # Check the module-level uvicorn server handle (set by run_api).
+        # If the server is up and not shutting down, the API is serving.
+        return _api_server is not None and not _api_server.should_exit
+
+    set_in_process_api(True, is_serving=_is_api_serving)
+
     tasks: list[asyncio.Task] = [
         asyncio.create_task(run_api(host, port), name="api"),
         asyncio.create_task(run_worker(), name="worker"),

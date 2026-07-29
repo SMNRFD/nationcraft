@@ -74,7 +74,7 @@ async def test_api_client_refreshes_on_401_then_retries():
 
     call_count = {"n": 0}
 
-    async def _mock_request(method, url, headers=None, json=None):
+    async def _mock_request(method, url, headers=None, json=None, **kwargs):
         call_count["n"] += 1
         # First call: original request returns 401
         # Second call: refresh call returns 200 with new tokens
@@ -115,7 +115,7 @@ async def test_api_client_refresh_failure_clears_tokens():
     refresh_resp.status_code = 401  # refresh fails
     refresh_resp.json.return_value = {"ok": False, "error": {"code": "authentication_failed"}}
 
-    async def _mock_request(method, url, headers=None, json=None):
+    async def _mock_request(method, url, headers=None, json=None, **kwargs):
         if "refresh" in url:
             return refresh_resp
         unauth = MagicMock()
@@ -139,17 +139,29 @@ async def test_api_client_refresh_failure_clears_tokens():
 
 
 def test_api_client_timeout_is_bounded():
-    """The httpx client should be configured with a bounded timeout.
+    """The httpx client should be configured with a bounded default timeout
+    (8s read) and a longer auth timeout (12s read) for register/login.
 
-    Was 15s (original) → 5s (too short, caused ReadTimeout on Argon2
-    hashing) → 15s (current, balances responsiveness with Argon2's
-    ~500ms hash time on slow machines).
+    History:
+    - 5s (original) — too short, caused ReadTimeout on Argon2 hashing.
+    - 15s (second attempt) — too long; every hung API call blocked the
+      bot's per-chat dispatcher for 15s, queuing all subsequent updates
+      for that chat. On a slow Iranian network the queued updates
+      compounded, producing the reported 19-38s update durations.
+    - 8s default + 12s auth (current) — 8s covers Argon2 ~500ms + DB I/O
+      ~2s + event-bus publish with comfortable margin; lets the bot
+      recover quickly when the API is genuinely broken. 12s for
+      auth endpoints because Argon2 with RFC 9106 parameters can spike
+      to 1-2s under load; we'd rather wait than tell the user "timeout"
+      when the operation is succeeding.
     """
     import httpx
-    from nationcraft.bot.api_client import _DEFAULT_TIMEOUT
-    # Read timeout should be 15s (enough for Argon2 + DB I/O).
-    assert _DEFAULT_TIMEOUT.read == pytest.approx(15.0)
+    from nationcraft.bot.api_client import _DEFAULT_TIMEOUT, _AUTH_TIMEOUT
+    # Default read timeout should be 8s (was 15s — too long).
+    assert _DEFAULT_TIMEOUT.read == pytest.approx(8.0)
     assert _DEFAULT_TIMEOUT.connect == pytest.approx(2.0)
+    # Auth endpoints should use 12s (Argon2 spikes).
+    assert _AUTH_TIMEOUT.read == pytest.approx(12.0)
 
 
 def test_api_client_base_url_picks_up_local_override():
@@ -233,7 +245,7 @@ async def test_api_client_get_me_clears_token_on_401():
     refresh_fail.json.return_value = {"ok": False, "error": {"code": "authentication_failed"}}
 
     call_count = {"n": 0}
-    async def _mock_request(method, url, headers=None, json=None):
+    async def _mock_request(method, url, headers=None, json=None, **kwargs):
         call_count["n"] += 1
         if "refresh" in url:
             return refresh_fail

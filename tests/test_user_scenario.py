@@ -44,7 +44,7 @@ async def test_full_login_flow_does_not_block_on_slow_api():
         },
     }
 
-    async def _slow_login(method, url, headers=None, json=None):
+    async def _slow_login(method, url, headers=None, json=None, **kwargs):
         # Simulate a 1s API delay (well under the 5s timeout, but enough
         # to expose any blocking issue).
         await asyncio.sleep(1.0)
@@ -95,7 +95,7 @@ async def test_401_after_login_triggers_refresh_not_permanent_failure():
 
     call_log = []
 
-    async def _mock_request(method, url, headers=None, json=None):
+    async def _mock_request(method, url, headers=None, json=None, **kwargs):
         call_log.append((method, url))
         if "refresh" in url:
             return refresh_resp

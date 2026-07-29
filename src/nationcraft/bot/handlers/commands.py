@@ -150,6 +150,12 @@ async def cmd_status(message: Message, state: FSMContext, locale: str = "en") ->
 
     Useful for users to debug issues like 'I can't log in' or 'the bot
     says I'm not authenticated but I registered'.
+
+    Uses ``api_client.health()`` so the check uses the in-process fast
+    path when running ``--local`` (bot + API share one event loop). The
+    previous implementation created a new ``httpx.AsyncClient`` per
+    call, which leaked connections and could itself block the event
+    loop.
     """
     await state.clear()
     user = message.from_user
@@ -158,44 +164,31 @@ async def cmd_status(message: Message, state: FSMContext, locale: str = "en") ->
     has_refresh = api_client.get_refresh_token(user.id) is not None
     is_admin = user.id in settings.admin_ids if hasattr(settings, 'admin_ids') else False
 
-    # Test API connectivity — try both /health and /health/ready
-    api_status = "unknown"
-    api_latency_ms = None
-    api_detail = ""
-    try:
-        import time as _time
-        start = _time.perf_counter()
-        async with httpx.AsyncClient(timeout=10.0) as _c:
-            r = await _c.get(f"{api_client.base_url}/health")
-            elapsed = (_time.perf_counter() - start) * 1000
-            if r.status_code == 200:
-                api_status = "ok"
-                api_latency_ms = round(elapsed)
-                # Also check /health/ready for DB status
-                try:
-                    r2 = await _c.get(f"{api_client.base_url}/health/ready", timeout=3.0)
-                    if r2.status_code == 200:
-                        ready = r2.json()
-                        checks = ready.get("checks", {})
-                        db_status = checks.get("db", "unknown")
-                        api_detail = f"\n   DB: {db_status}"
-                        if ready.get("status") == "degraded":
-                            api_detail += " ⚠️ degraded"
-                except Exception:
-                    pass
-            else:
-                api_status = f"http_{r.status_code}"
-                api_detail = f"\n   Response: {r.text[:100]}"
-    except httpx.ConnectError as e:
-        api_status = "unreachable"
-        api_detail = f"\n   Connection refused. Is the API running?"
-        api_detail += f"\n   Error: {type(e).__name__}: {str(e)[:100]}"
-    except httpx.TimeoutException:
-        api_status = "timeout"
-        api_detail = f"\n   API did not respond within 10 seconds."
-    except Exception as e:
-        api_status = f"error: {type(e).__name__}"
-        api_detail = f"\n   {str(e)[:150]}"
+    # Check API connectivity via api_client.health() — uses in-process
+    # fast-path when --local, HTTP otherwise. Bounded to 5s so it
+    # never blocks the handler for long.
+    import time as _time
+    start = _time.perf_counter()
+    health = await api_client.health()
+    api_latency_ms = round((_time.perf_counter() - start) * 1000)
+    api_status = health.get("status", "unknown")
+    api_source = health.get("source", "?")
+    api_detail = f"\n   Source: {api_source}"
+
+    # If HTTP-based and status is ok, also check /health/ready for DB.
+    if api_status == "ok" and api_source == "http":
+        try:
+            async with httpx.AsyncClient(timeout=3.0) as _c:
+                r2 = await _c.get(f"{api_client.base_url}/health/ready", timeout=3.0)
+                if r2.status_code == 200:
+                    ready = r2.json()
+                    checks = ready.get("checks", {})
+                    db_status = checks.get("db", "unknown")
+                    api_detail += f"\n   DB: {db_status}"
+                    if ready.get("status") == "degraded":
+                        api_detail += " ⚠️ degraded"
+        except Exception:
+            pass
 
     # Check if DATABASE_URL looks valid
     db_url = settings.DATABASE_URL or "(not set)"
@@ -223,7 +216,10 @@ async def cmd_status(message: Message, state: FSMContext, locale: str = "en") ->
             f"The API is not reachable. Make sure you started the game with:\n"
             f"  `python main.py --local`\n"
             f"(NOT `--only bot` — that skips the API server.)\n"
-            f"Also run `python main.py --local --initdb` first to create the database."
+            f"Also run `python main.py --local --initdb` first to create the database.\n"
+            f"\n"
+            f"If you registered before the API was up, your account was NOT created.\n"
+            f"Type /register again now that the API is running.\n"
         )
     await safe_send(message, text, parse_mode="Markdown", reply_markup=main_menu_keyboard())
 

@@ -74,14 +74,33 @@ def test_bot_default_parse_mode_is_none():
 # Bug 26: httpx.ReadTimeout — 5s timeout too short for Argon2
 # ---------------------------------------------------------------------
 
-def test_api_client_timeout_is_15s():
-    """The API client read timeout should be 15s (was 5s).
-    Argon2 hashing takes ~500ms on Windows/Python 3.11; combined with
-    DB I/O the total can exceed 5s, causing httpx.ReadTimeout.
+def test_api_client_timeout_is_bounded():
+    """The API client read timeout should be bounded to ~8s for regular
+    calls and ~12s for auth (Argon2) calls.
+
+    Previously 5s was too short (Argon2 + DB I/O could exceed 5s on
+    slow Windows, causing spurious ``httpx.ReadTimeout``).
+
+    Then it was raised to 15s, which caused a different failure mode:
+    every hung API call blocked the bot's per-chat dispatcher for
+    15s, queuing all subsequent updates for that chat. On a slow
+    Iranian network the queued updates compounded, producing the
+    reported 19-38s update durations.
+
+    The new behavior:
+    - Default read timeout: 8s (covers Argon2 ~500ms + DB I/O ~2s +
+      event-bus publish with comfortable margin; lets the bot
+      recover quickly when the API is genuinely broken).
+    - Auth (register/login) read timeout: 12s (Argon2 with RFC 9106
+      parameters can spike to 1-2s under load; we'd rather wait than
+      tell the user "timeout" when the operation is succeeding).
     """
-    from nationcraft.bot.api_client import _DEFAULT_TIMEOUT
-    assert _DEFAULT_TIMEOUT.read == pytest.approx(15.0), (
-        f"expected read timeout=15.0s, got {_DEFAULT_TIMEOUT.read}s"
+    from nationcraft.bot.api_client import _DEFAULT_TIMEOUT, _AUTH_TIMEOUT
+    assert _DEFAULT_TIMEOUT.read == pytest.approx(8.0), (
+        f"expected default read timeout=8.0s, got {_DEFAULT_TIMEOUT.read}s"
+    )
+    assert _AUTH_TIMEOUT.read == pytest.approx(12.0), (
+        f"expected auth read timeout=12.0s, got {_AUTH_TIMEOUT.read}s"
     )
 
 
@@ -183,21 +202,36 @@ def test_bot_has_global_error_handler():
 
 
 # ---------------------------------------------------------------------
-# Bug 30: /status timeout message says correct timeout value
+# Bug 30: /status uses api_client.health() (in-process fast path)
 # ---------------------------------------------------------------------
 
-def test_status_timeout_message_matches_actual_timeout():
-    """The /status command's timeout message should say '10 seconds'
-    (matching the actual httpx timeout of 10.0s), not '5 seconds'.
+def test_status_uses_api_client_health():
+    """/status should call ``api_client.health()`` instead of creating
+    a new ``httpx.AsyncClient`` per call.
+
+    Reasons:
+    - The old ``httpx.AsyncClient(timeout=10.0)`` leaked a connection
+      pool per /status invocation.
+    - On ``--local`` mode (bot + API share one event loop), the HTTP
+      roundtrip to localhost can deadlock if the event loop is busy
+      with a slow Telegram send. The new ``api_client.health()``
+      short-circuits this by checking the in-process uvicorn server
+      state directly.
+    - The 10s timeout was also too long: if the API was genuinely
+      unreachable, the user waited 10s for /status to respond. The
+      new helper has a 5s internal timeout.
     """
     from pathlib import Path
     commands_path = Path(__file__).parent.parent / "src" / "nationcraft" / "bot" / "handlers" / "commands.py"
     source = commands_path.read_text()
-    # The timeout in the AsyncClient should be 10.0
-    assert "timeout=10.0" in source, (
-        "/status should use timeout=10.0 for the API health check"
+    # Should call api_client.health()
+    assert "await api_client.health()" in source, (
+        "/status should use api_client.health() for the API check"
     )
-    # The error message should say "10 seconds" (not "5 seconds")
-    assert "within 10 seconds" in source, (
-        "/status timeout message should say 'within 10 seconds'"
+    # Should NOT create a fresh httpx.AsyncClient(timeout=10.0) just
+    # for /health (it leaks connections and can't use the in-process
+    # fast path).
+    assert "timeout=10.0" not in source, (
+        "/status should not use httpx.AsyncClient(timeout=10.0) — "
+        "use api_client.health() instead (in-process fast path)"
     )

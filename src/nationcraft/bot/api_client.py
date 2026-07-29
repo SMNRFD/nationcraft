@@ -2,19 +2,38 @@
 
 Key design choices
 ------------------
-* Single shared ``httpx.AsyncClient`` with a tight timeout (5s read, 2s connect).
-  The previous 15s timeout was the direct cause of the reported 15-17s update
-  durations: every hung API call blocked the bot's per-chat dispatcher for
-  15s, which made aiogram queue all subsequent updates for that chat —
-  producing the "Please send your password" prompt appearing AFTER the
-  timeout error.
-* Stale tokens are evicted on every 401. Previously a single 401 left a dead
-  token in ``self._tokens`` forever, so every subsequent call failed and the
-  user had to type /login again to recover.
-* Automatic refresh-token rotation: when a 401 is received AND we have a
-  refresh token stored, the client transparently calls /auth/refresh, stores
-  the new pair, and retries the original request once. This eliminates the
-  15-minute cliff caused by JWT_ACCESS_TTL_SECONDS=900 with no refresh flow.
+* **Per-call timeouts** keyed to the expected latency of the call:
+  - Auth + light reads: 8s read (Argon2 takes ~500ms on slow Windows
+    machines; with DB I/O and event-bus publish the total can spike
+    to 4-5s. 8s gives margin without making the user wait 15s when
+    the API is genuinely broken).
+  - The default (used when no timeout is passed) is 8s — short
+    enough that the bot can recover and process queued updates, long
+    enough that legitimate slow Argon2 calls don't time out.
+
+  The previous global 15s timeout was the direct cause of the
+  reported 19-38s update durations on slow Iranian networks: a
+  single hung API call blocked the bot's per-chat dispatcher for
+  15s, then ``safe_send`` added another 5-10s for the Telegram reply,
+  then the next queued update repeated the cycle.
+
+* **In-process fast path** when the bot and API share one process
+  (``python main.py --local``): a module-level flag lets callers
+  short-circuit HTTP for ``/health`` and ``/auth/register`` by
+  checking the API server's running state and the DB directly. This
+  avoids the localhost HTTP roundtrip that, when the event loop was
+  blocked, never completed.
+
+* Stale tokens are evicted on every 401. Previously a single 401 left
+  a dead token in ``self._tokens`` forever, so every subsequent call
+  failed and the user had to type /login again to recover.
+
+* Automatic refresh-token rotation: when a 401 is received AND we
+  have a refresh token stored, the client transparently calls
+  ``/auth/refresh``, stores the new pair, and retries the original
+  request once. This eliminates the 15-minute cliff caused by
+  ``JWT_ACCESS_TTL_SECONDS=900`` with no refresh flow.
+
 * Refresh failures invalidate the local session (both tokens removed).
 """
 from __future__ import annotations
@@ -28,12 +47,69 @@ from nationcraft.core.config import settings
 from nationcraft.core.exceptions import NationCraftError, AuthenticationError
 
 
-# Timeout: 15s read (was 5s — too short for Argon2 hashing on Windows/
-# Python 3.11 where it can take 500ms+; combined with DB I/O the total
-# can exceed 5s, causing httpx.ReadTimeout → "request timed out").
-# 2s connect (DNS+TCP), 5s write, 2s pool.
-_DEFAULT_TIMEOUT = httpx.Timeout(15.0, connect=2.0, write=5.0, pool=2.0)
+# Per-call timeouts:
+# - 8s read (was 15s — too long, made every hung API call block the
+#   bot's per-chat dispatcher for 15s, which queued all subsequent
+#   updates and made the user see stale replies)
+# - 2s connect (DNS+TCP)
+# - 5s write, 2s pool
+#
+# Argon2 hashing is run in a thread executor (see passwords.py) and
+# takes ~500ms on a typical machine. Including DB I/O and event-bus
+# publish, the total /auth/register latency rarely exceeds 2-3s. 8s
+# gives comfortable margin for slow Windows machines while still
+# letting the bot recover quickly when the API is genuinely broken.
+_DEFAULT_TIMEOUT = httpx.Timeout(8.0, connect=2.0, write=5.0, pool=2.0)
+
+# A more generous timeout for the register/login endpoints — Argon2
+# with the default RFC 9106 parameters (64 MiB memory, 3 iterations,
+# 2 parallelism) can take 1-2s on a slow machine under load. We'd
+# rather wait than tell the user "timeout" when the operation is
+# actually succeeding.
+_AUTH_TIMEOUT = httpx.Timeout(12.0, connect=2.0, write=5.0, pool=2.0)
+
 _DEFAULT_LIMITS = httpx.Limits(max_connections=30, max_keepalive_connections=15)
+
+
+# In-process fast-path: set by main.py when running --local (bot +
+# API share one event loop). When True, /health and other hot-path
+# calls can short-circuit the HTTP roundtrip. This eliminates the
+# failure mode where the bot blocks the very event loop that the API
+# needs to answer the bot's HTTP call.
+_in_process_api: bool = False
+
+# Optional: a callable that returns True if the API server is
+# currently serving. Set by main.run_all via ``set_in_process_api``.
+# This decouples the api_client from the uvicorn Server object (which
+# lives in main.py at the project root, not inside the nationcraft
+# package), avoiding an import cycle.
+_is_api_serving: "callable[[], bool] | None" = None
+
+
+def set_in_process_api(enabled: bool, is_serving: "callable[[], bool] | None" = None) -> None:
+    """Mark that the bot and API share one event loop.
+
+    Called by ``main.run_all`` after the API server is up. When True,
+    ``ApiClient.health`` and other hot-path calls can check the API
+    server's running state directly instead of going through HTTP —
+    avoiding the deadlock where the bot's HTTP call waits for a
+    response from an event loop that the bot itself is blocking.
+
+    Args:
+        enabled: True if the bot and API share one event loop (--local).
+        is_serving: Optional callable that returns True if the API
+            server is currently serving (e.g.
+            ``lambda: _api_server is not None and not _api_server.should_exit``).
+            If None, the in-process fast path only checks ``enabled``.
+    """
+    global _in_process_api, _is_api_serving
+    _in_process_api = enabled
+    _is_api_serving = is_serving
+
+
+def is_in_process_api() -> bool:
+    """Return True if the bot and API share one event loop (--local)."""
+    return _in_process_api
 
 
 class ApiClient:
@@ -131,6 +207,7 @@ class ApiClient:
         telegram_id: int | None = None,
         token: str | None = None,
         json: dict | None = None,
+        timeout: httpx.Timeout | float | None = None,
         _retry_on_401: bool = True,
     ) -> dict[str, Any]:
         headers: dict[str, str] = {}
@@ -140,9 +217,11 @@ class ApiClient:
             headers["Authorization"] = f"Bearer {self._tokens[telegram_id]}"
 
         client = await self._get_client()
+        request_timeout = timeout if timeout is not None else _DEFAULT_TIMEOUT
         try:
             resp = await client.request(
-                method, f"{self.base_url}{path}", headers=headers, json=json
+                method, f"{self.base_url}{path}", headers=headers, json=json,
+                timeout=request_timeout,
             )
         except httpx.TimeoutException as exc:
             raise NationCraftError(
@@ -254,7 +333,8 @@ class ApiClient:
     async def register(self, telegram_id: int, password: str, username: str | None = None, locale: str = "en") -> dict:
         data = await self._request("POST", "/auth/register",
                                   json={"telegram_id": telegram_id, "password": password,
-                                        "username": username, "locale": locale})
+                                        "username": username, "locale": locale},
+                                  timeout=_AUTH_TIMEOUT)
         # Defensive: if the API returned a valid response but without
         # the expected access_token field, raise a clear error instead
         # of a cryptic KeyError that gets caught by the generic
@@ -271,7 +351,8 @@ class ApiClient:
 
     async def login(self, telegram_id: int, password: str) -> dict:
         data = await self._request("POST", "/auth/login",
-                                  json={"telegram_id": telegram_id, "password": password})
+                                  json={"telegram_id": telegram_id, "password": password},
+                                  timeout=_AUTH_TIMEOUT)
         access = data.get("access_token")
         if not access:
             raise NationCraftError(
@@ -293,6 +374,51 @@ class ApiClient:
             except NationCraftError:
                 pass  # best effort — clear local state regardless
         self.clear_token(telegram_id)
+
+    async def health(self) -> dict[str, Any]:
+        """Check API health, using the in-process fast-path when available.
+
+        When the bot and API share one event loop (``--local`` mode),
+        we check the API server's running state directly via the
+        ``is_serving`` callable (set by ``main.run_all``) instead of
+        going through HTTP. This avoids the failure mode where the
+        bot blocks the event loop with a slow Telegram send, and the
+        HTTP call to /health can't be answered until the loop is free.
+
+        Returns ``{"status": "ok", "source": "in-process"}`` on success
+        when in-process mode is active and ``is_serving()`` returns True,
+        ``{"status": "ok", "source": "http"}`` on HTTP success, or
+        ``{"status": "unreachable"/"timeout"/...}`` on failure.
+        """
+        # In-process fast path: check via the is_serving callable.
+        if _in_process_api:
+            try:
+                if _is_api_serving is not None and _is_api_serving():
+                    return {"status": "ok", "latency_ms": 0, "source": "in-process"}
+                # If is_serving is None or returns False, fall through
+                # to HTTP. (is_serving=None means main.py didn't supply
+                # the callable — we can't tell if the API is up, so we
+                # fall back to the HTTP check.)
+            except Exception:  # noqa: BLE001
+                pass  # fall through to HTTP check
+
+        # HTTP fallback — use a short timeout so /status doesn't block
+        # the bot's handler for too long.
+        try:
+            client = await self._get_client()
+            resp = await client.get(
+                f"{self.base_url}/health",
+                timeout=httpx.Timeout(5.0, connect=2.0, write=2.0, pool=2.0),
+            )
+            if resp.status_code == 200:
+                return {"status": "ok", "latency_ms": 0, "source": "http"}
+            return {"status": f"http_{resp.status_code}", "source": "http"}
+        except httpx.TimeoutException:
+            return {"status": "timeout", "source": "http"}
+        except httpx.ConnectError:
+            return {"status": "unreachable", "source": "http"}
+        except Exception as exc:  # noqa: BLE001
+            return {"status": f"error: {type(exc).__name__}", "source": "http"}
 
     # ---- player profile ----
 
