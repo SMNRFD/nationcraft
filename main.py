@@ -341,14 +341,46 @@ async def run_all(host: str, port: int, use_webhook: bool = False) -> None:
     )
 
     # If a real task finished first (error or unexpected exit), log it.
+    # CRITICAL: We only shut down ALL services if:
+    #   - The stop_event fired (Ctrl+C / SIGTERM), OR
+    #   - The API task exited (the API is the critical service — if it
+    #     crashes, the bot can't function, so we shut everything down).
+    #
+    # If ONLY the bot task exited (e.g. getMe timed out on Iran's
+    # throttled network), we do NOT shut down the API and worker.
+    # Instead, we log the error and let the API/worker keep running.
+    # The user can restart the bot separately with
+    # ``python main.py --only bot`` once their network stabilizes.
+    should_shutdown_all = False
     for t in done:
         if t is watcher:
+            # Signal fired → shut down everything.
+            should_shutdown_all = True
             continue
         exc = t.exception()
         if exc and not isinstance(exc, asyncio.CancelledError):
             log.error("main.task.exited", name=t.get_name(), error=str(exc))
         elif not exc:
             log.warning("main.task.exited", name=t.get_name())
+        # If the API or worker task exited, we must shut down everything
+        # (the bot can't function without the API).
+        if t.get_name() in ("api", "worker"):
+            should_shutdown_all = True
+
+    if not should_shutdown_all:
+        # Only the bot task exited (e.g. network timeout on getMe).
+        # Keep the API and worker running. The user can restart the
+        # bot separately when their network stabilizes.
+        log.warning(
+            "main.bot.exited_keep_running",
+            hint=(
+                "The bot exited (likely due to network issues reaching "
+                "api.telegram.org). The API and worker are still running. "
+                "Restart the bot with: python main.py --only bot"
+            ),
+        )
+        # Wait for the stop_event (Ctrl+C) — don't shut down API/worker.
+        await stop_event.wait()
 
     # ---- Graceful shutdown phase ----
     # 1. Ask the uvicorn server to exit cleanly (lets it close lifespan).

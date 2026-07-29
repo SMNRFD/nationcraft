@@ -16,20 +16,29 @@ import pytest
 # Bug 24: Pre-flight API check raced with API startup — REMOVED entirely
 # ---------------------------------------------------------------------
 
-def test_bot_has_no_pre_flight_check():
-    """The pre-flight API check was REMOVED because on Windows the
+def test_bot_has_no_pre_flight_api_check():
+    """The pre-flight LOCAL API check was REMOVED because on Windows the
     ProactorEventLoop stalls localhost TCP connections, so the /health
     check timed out even when the API was running fine. The bot's
     error handlers already catch API errors gracefully.
+
+    NOTE: This test specifically checks for the LOCAL API /health
+    pre-flight check, NOT the getMe retry loop. The getMe retry loop
+    (added later) is for reaching api.telegram.org, which is a
+    completely different concern — it prevents the bot from crashing
+    the entire process when Telegram is unreachable (Iran network).
     """
     import inspect
     from nationcraft.bot.app import run_bot
     source = inspect.getsource(run_bot)
-    # The retry loop should NOT be present (it caused 30s delays + false
-    # "unreachable" warnings on Windows).
-    assert "for attempt in range" not in source, (
-        "run_bot should NOT have a pre-flight API retry loop — it "
+    # The LOCAL API /health pre-flight check should NOT be present.
+    # (The getMe retry loop is OK — it's for Telegram, not the local API.)
+    assert "/health" not in source, (
+        "run_bot should NOT have a pre-flight LOCAL API /health check — it "
         "causes 30s delays and false 'unreachable' warnings on Windows"
+    )
+    assert "api_client.health()" not in source, (
+        "run_bot should NOT call api_client.health() as a pre-flight check"
     )
 
 

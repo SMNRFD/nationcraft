@@ -242,11 +242,83 @@ async def run_bot(use_webhook: bool = False) -> None:
             secret_token=settings.TELEGRAM_WEBHOOK_SECRET,
         )
         log.info("bot.webhook.set", url=settings.TELEGRAM_WEBHOOK_URL)
-    else:
-        me = await bot.get_me()
-        log.info("bot.start", username=me.username, id=me.id)
         try:
             await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
         finally:
+            await bot.session.close()
+            await api_client.close()
+    else:
+        # ---- Retry getMe with backoff ----
+        # On a throttled network (Iran, China, Russia), the initial
+        # ``bot.get_me()`` call can time out. Previously, this raised
+        # ``TelegramNetworkError`` which propagated up and killed the
+        # entire process (``main.task.exited error='HTTP Client says -
+        # Request timeout error'``). The API and worker were then
+        # shut down too, even though they were perfectly healthy.
+        #
+        # Now we retry up to 5 times with exponential backoff. If all
+        # retries fail, we enter "degraded polling" mode where we
+        # start polling anyway — aiogram's polling loop has its own
+        # built-in retry logic for network errors.
+        #
+        # CRITICAL: The entire block is wrapped in try/finally so the
+        # aiohttp session is ALWAYS closed, even if getMe/polling
+        # raises. Previously, when getMe raised, the session was
+        # leaked → "Unclosed client session" warning.
+        try:
+            me = None
+            max_getme_retries = 5
+            for attempt in range(max_getme_retries):
+                try:
+                    me = await bot.get_me()
+                    break
+                except TelegramNetworkError as exc:
+                    if attempt < max_getme_retries - 1:
+                        backoff = min(2 ** attempt, 30)  # 1, 2, 4, 8, 16s
+                        log.warning(
+                            "bot.getme.retry",
+                            attempt=attempt + 1,
+                            max=max_getme_retries,
+                            backoff_seconds=backoff,
+                            error=str(exc)[:150],
+                        )
+                        await asyncio.sleep(backoff)
+                    else:
+                        log.error(
+                            "bot.getme.failed",
+                            hint=(
+                                "Cannot reach api.telegram.org after "
+                                f"{max_getme_retries} attempts. The bot will "
+                                "keep retrying via the polling loop. If you're "
+                                "in a region where Telegram is blocked (Iran, "
+                                "China, Russia), set TELEGRAM_PROXY in .env: "
+                                "TELEGRAM_PROXY=socks5://127.0.0.1:1080"
+                            ),
+                        )
+                except Exception as exc:  # noqa: BLE001
+                    if attempt < max_getme_retries - 1:
+                        log.warning(
+                            "bot.getme.retry",
+                            attempt=attempt + 1,
+                            max=max_getme_retries,
+                            error=str(exc)[:150],
+                        )
+                        await asyncio.sleep(2 ** attempt)
+                    else:
+                        log.error("bot.getme.failed", error=str(exc)[:200])
+
+            if me is not None:
+                log.info("bot.start", username=me.username, id=me.id)
+            else:
+                log.warning("bot.start.degraded", reason="getMe failed, starting polling anyway")
+
+            # ``start_polling`` has its own retry logic for network errors
+            # — it will keep trying getUpdates with backoff. This is the
+            # correct behavior: the bot stays alive and recovers when the
+            # network comes back.
+            await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
+        finally:
+            # ALWAYS close the session, even if getMe/polling raised.
+            # This prevents the "Unclosed client session" warning.
             await bot.session.close()
             await api_client.close()
