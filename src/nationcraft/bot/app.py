@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 import aiohttp
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
+from aiogram.client.session.aiohttp import AiohttpSession
 from aiogram.enums import ParseMode
 from aiogram.exceptions import TelegramNetworkError, TelegramBadRequest
 from aiogram.fsm.storage.memory import MemoryStorage
@@ -89,11 +90,28 @@ def _build_aiohttp_session() -> aiohttp.ClientSession:
     (Iran, China, Russia, etc.), set ``TELEGRAM_PROXY`` in .env:
       TELEGRAM_PROXY=socks5://127.0.0.1:1080
       TELEGRAM_PROXY=http://127.0.0.1:8080
+
+    Returns a session ONLY for its config (connector + timeout) — the
+    caller closes it immediately. The bot itself uses a properly
+    configured ``AiohttpSession`` passed via ``Bot(session=...)`` (see
+    ``run_bot``).
     """
-    # Total timeout: 30s connect, 60s total (Telegram can be slow on
-    # poor networks — the default 5s was too short and caused WinError
-    # 10054 on every long-poll cycle).
-    timeout = aiohttp.ClientTimeout(total=60.0, connect=30.0, sock_connect=30.0, sock_read=30.0)
+    # Total timeout for individual HTTP requests to Telegram.
+    # The default aiogram uses is 60s — too long on a throttled
+    # network, because a single ``message.answer()`` can block for
+    # 60s, which makes aiogram queue all subsequent updates for that
+    # chat. On a slow Iranian network this compounds to 19-38s update
+    # durations and WinError 10054 (the OS forcibly closes the
+    # connection before aiogram's 60s timeout fires).
+    #
+    # 15s is short enough that the bot recovers and processes queued
+    # updates within a reasonable window, and long enough that a
+    # legitimately slow Telegram API response still has time to
+    # arrive. Telegram's own getUpdates long-poll uses 30s, so 15s
+    # is below that and won't race with the long-poll itself.
+    total = settings.TELEGRAM_REQUEST_TIMEOUT
+    connect = min(total, 15.0)
+    timeout = aiohttp.ClientTimeout(total=total, connect=connect, sock_connect=connect, sock_read=total)
 
     # TCP connector with keepalive and generous limits.
     connector = aiohttp.TCPConnector(
@@ -108,10 +126,37 @@ def _build_aiohttp_session() -> aiohttp.ClientSession:
     if proxy:
         log.info("bot.proxy.configured", proxy=proxy[:50])
 
-    # Note: aiohttp uses the ``proxy`` parameter on each request, not
-    # on the session. aiogram passes it through via Bot(session=...).
-    # We'll set it on the session for non-aiogram requests.
     return aiohttp.ClientSession(timeout=timeout, connector=connector)
+
+
+def _build_aiogram_session() -> AiohttpSession:
+    """Build an aiogram AiohttpSession with proxy + per-request timeout
+    set PROPERLY (via constructor, not by mutating private attrs).
+
+    The previous implementation tried to set ``bot.session._connector``
+    and ``bot.session._timeout`` AFTER the bot was created. That had
+    NO effect because ``AiohttpSession`` doesn't expose those attrs —
+    it constructs the underlying ``aiohttp.ClientSession`` lazily via
+    ``create_session()``, reading from ``self._connector_init`` and
+    ``self.timeout`` (both set at construction time).
+
+    Result: the bot was using aiogram's DEFAULT 60s timeout, which on
+    a throttled Iranian network caused each ``message.answer()`` to
+    block for 60s (or get forcibly closed by the OS at ~5s with
+    WinError 10054), compounding into the reported 19-38s update
+    durations.
+
+    Now we pass a properly constructed ``AiohttpSession`` to
+    ``Bot(session=...)`` so the timeout and proxy actually take
+    effect on every request aiogram makes.
+    """
+    # Per-request timeout (was hardcoded 60s in aiogram's default).
+    # Make sure aiohttp-socks is installed if a SOCKS proxy is set.
+    proxy = settings.TELEGRAM_PROXY or None
+    return AiohttpSession(
+        proxy=proxy,
+        timeout=settings.TELEGRAM_REQUEST_TIMEOUT,
+    )
 
 
 async def run_bot(use_webhook: bool = False) -> None:
@@ -124,22 +169,41 @@ async def run_bot(use_webhook: bool = False) -> None:
     # through safe_send(). This prevents TelegramBadRequest
     # "can't parse entities" when user-supplied content (usernames,
     # country names, etc.) contains Markdown special chars like _ or *.
+    #
+    # IMPORTANT: pass a properly-constructed AiohttpSession so the
+    # per-request timeout and proxy actually take effect. The previous
+    # implementation set ``bot.session._connector`` and ``_timeout``
+    # AFTER the bot was created — but AiohttpSession doesn't expose
+    # those attrs, so the settings were silently ignored and aiogram's
+    # default 60s timeout was used. On a throttled Iranian network,
+    # this caused each message.answer() to block for 60s (or get
+    # forcibly closed by the OS at ~5s with WinError 10054), which
+    # compounded into the reported 19-38s update durations.
+    session = _build_aiogram_session()
     bot = Bot(
         token=settings.TELEGRAM_BOT_TOKEN,
         default=DefaultBotProperties(parse_mode=None),
+        session=session,
     )
     dp = build_dispatcher()
 
-    # Configure the bot's HTTP session with proxy + resilient timeouts.
-    # This must happen BEFORE start_polling so the first get_me() uses
-    # the new session.
-    session = _build_aiohttp_session()
-    bot.session._connector = session.connector
-    bot.session._timeout = session.timeout
-    # Store proxy for aiogram to use on every request.
     if settings.TELEGRAM_PROXY:
-        bot.session._default_proxy = settings.TELEGRAM_PROXY
-    await session.close()  # we only needed its config, not the session itself
+        log.info("bot.proxy.configured", proxy=settings.TELEGRAM_PROXY[:50])
+    else:
+        # Loud warning for users in regions where api.telegram.org is
+        # throttled (Iran, China, Russia, etc.). Without a proxy, the
+        # bot will see WinError 10054 / "Cannot connect to host
+        # api.telegram.org:443" on every long-poll cycle.
+        log.warning(
+            "bot.no_proxy_set",
+            hint=(
+                "Set TELEGRAM_PROXY in .env if you're in a region where "
+                "api.telegram.org is blocked/throttled (Iran, China, "
+                "Russia). Examples: "
+                "TELEGRAM_PROXY=socks5://127.0.0.1:1080  OR  "
+                "TELEGRAM_PROXY=http://127.0.0.1:8080"
+            ),
+        )
 
     if use_webhook and settings.TELEGRAM_WEBHOOK_URL:
         await bot.set_webhook(

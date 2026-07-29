@@ -70,6 +70,17 @@ class Settings(BaseSettings):
     # China, Russia). Format: "http://host:port" or "socks5://host:port".
     # Example: TELEGRAM_PROXY=socks5://127.0.0.1:1080
     TELEGRAM_PROXY: str = ""
+    # Per-request timeout (in seconds) for the bot's HTTP calls to
+    # api.telegram.org. The default aiogram uses is 60s — too long on
+    # a throttled network, because a single ``message.answer()`` can
+    # block for 60s, which makes aiogram queue all subsequent updates
+    # for that chat. On a slow Iranian network this compounded to
+    # 19-38s update durations and WinError 10054 (the OS forcibly
+    # closed the connection before aiogram's 60s timeout fired).
+    # 15s is short enough that the bot recovers and processes queued
+    # updates, long enough that a legitimately slow Telegram response
+    # still has time to arrive.
+    TELEGRAM_REQUEST_TIMEOUT: float = 15.0
 
     # ---- Game ----
     TICK_INTERVAL_SECONDS: int = 60

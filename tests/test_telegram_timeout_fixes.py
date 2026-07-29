@@ -509,3 +509,133 @@ async def test_safe_send_reraises_cancelled_error():
 
     with pytest.raises(asyncio.CancelledError):
         await safe_send(message, "hello", parse_mode="Markdown")
+
+
+# ---------------------------------------------------------------------
+# Bug 39: aiogram AiohttpSession is properly constructed (not mutated
+# after the fact, which silently did nothing)
+# ---------------------------------------------------------------------
+
+def test_build_aiogram_session_sets_proxy_and_timeout():
+    """``_build_aiogram_session`` must construct ``AiohttpSession``
+    with proxy + timeout via the constructor — NOT by mutating
+    ``bot.session._connector`` and ``bot.session._timeout`` after
+    creating the Bot (which had no effect because AiohttpSession
+    doesn't expose those attrs).
+
+    This was the root cause of the user's 13s update durations:
+    the bot was using aiogram's DEFAULT 60s timeout for every
+    message.answer() call. On a throttled Iranian network each call
+    blocked for 60s (or got forcibly closed by the OS at ~5s with
+    WinError 10054), compounding into the 19-38s update durations
+    and "Cannot connect to host api.telegram.org:443" errors.
+    """
+    from nationcraft.bot.app import _build_aiogram_session
+    from nationcraft.core.config import settings
+
+    # Save and restore settings so this test doesn't leak state.
+    orig_proxy = settings.TELEGRAM_PROXY
+    orig_timeout = settings.TELEGRAM_REQUEST_TIMEOUT
+    try:
+        # With proxy
+        settings.TELEGRAM_PROXY = "socks5://127.0.0.1:1080"
+        settings.TELEGRAM_REQUEST_TIMEOUT = 15.0
+        sess = _build_aiogram_session()
+        assert sess._proxy == "socks5://127.0.0.1:1080", (
+            f"expected proxy=socks5://127.0.0.1:1080, got {sess._proxy!r}"
+        )
+        assert sess.timeout == 15.0, (
+            f"expected timeout=15.0, got {sess.timeout}"
+        )
+
+        # Without proxy
+        settings.TELEGRAM_PROXY = ""
+        settings.TELEGRAM_REQUEST_TIMEOUT = 12.5
+        sess = _build_aiogram_session()
+        assert sess._proxy is None
+        assert sess.timeout == 12.5
+    finally:
+        settings.TELEGRAM_PROXY = orig_proxy
+        settings.TELEGRAM_REQUEST_TIMEOUT = orig_timeout
+
+
+def test_bot_receives_constructed_session():
+    """The Bot must use the session we constructed (via
+    ``Bot(session=...)``), NOT an aiogram-default session that
+    ignores our proxy/timeout settings."""
+    from aiogram import Bot
+    from nationcraft.bot.app import _build_aiogram_session
+    from nationcraft.core.config import settings
+
+    orig_proxy = settings.TELEGRAM_PROXY
+    orig_timeout = settings.TELEGRAM_REQUEST_TIMEOUT
+    try:
+        settings.TELEGRAM_PROXY = ""
+        settings.TELEGRAM_REQUEST_TIMEOUT = 15.0
+        session = _build_aiogram_session()
+        bot = Bot(token="123:fake", session=session)
+        # The bot's session MUST be the one we constructed —
+        # otherwise our proxy/timeout settings are silently ignored.
+        assert bot.session is session, (
+            "Bot.session should be the AiohttpSession we passed in "
+            "(otherwise proxy/timeout settings are silently ignored)"
+        )
+    finally:
+        settings.TELEGRAM_PROXY = orig_proxy
+        settings.TELEGRAM_REQUEST_TIMEOUT = orig_timeout
+
+
+def test_run_bot_does_not_mutate_session_attrs():
+    """``run_bot`` must NOT try to set ``bot.session._connector`` or
+    ``bot.session._timeout`` after creating the Bot — those attrs
+    don't exist on AiohttpSession, so the assignments silently
+    created new instance attributes that were never read by the
+    session's internal create_session() flow."""
+    import ast
+    from pathlib import Path
+    app_path = Path(__file__).parent.parent / "src" / "nationcraft" / "bot" / "app.py"
+    source = app_path.read_text()
+    # Parse the source into an AST so we can check the ACTUAL code,
+    # not docstrings/comments. The old broken code assigned to
+    # ``bot.session._connector`` etc. as real statements.
+    tree = ast.parse(source)
+
+    class _AttributeAssignmentsVisitor(ast.NodeVisitor):
+        def __init__(self) -> None:
+            self.violations: list[str] = []
+
+        def visit_Assign(self, node: ast.Assign) -> None:
+            for target in node.targets:
+                # Look for `bot.session._connector = ...` etc.
+                if isinstance(target, ast.Attribute) and target.attr in (
+                    "_connector", "_timeout", "_default_proxy",
+                ):
+                    if isinstance(target.value, ast.Attribute) and target.value.attr == "session":
+                        self.violations.append(target.attr)
+            self.generic_visit(node)
+
+    visitor = _AttributeAssignmentsVisitor()
+    visitor.visit(tree)
+    assert visitor.violations == [], (
+        f"run_bot should NOT assign to bot.session._connector/_timeout/"
+        f"_default_proxy — AiohttpSession doesn't expose those attrs "
+        f"(the assignments silently create new instance attributes "
+        f"that are never read). Found violations: {visitor.violations}. "
+        f"Pass session=... to Bot() instead."
+    )
+    # The NEW correct pattern: Bot(session=session)
+    assert "session=session" in source, (
+        "run_bot should pass session=session to Bot() so the "
+        "AiohttpSession with our proxy + timeout is actually used"
+    )
+
+
+def test_telegram_request_timeout_default_is_15s():
+    """The default ``TELEGRAM_REQUEST_TIMEOUT`` should be 15s
+    (was effectively 60s — aiogram's hardcoded default that the
+    broken code couldn't override)."""
+    from nationcraft.core.config import Settings
+    s = Settings()
+    assert s.TELEGRAM_REQUEST_TIMEOUT == 15.0, (
+        f"expected 15.0, got {s.TELEGRAM_REQUEST_TIMEOUT}"
+    )
