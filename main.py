@@ -441,13 +441,29 @@ def _apply_local_overrides() -> None:
     startup about Redis being unavailable. Set ``REDIS_URL`` explicitly in
     ``.env`` (after running ``redis-server``) if you want real Redis during
     local development.
+
+    The API base URL is built from ``API_HOST`` and ``API_PORT`` settings
+    (which can be overridden via ``--host`` and ``--port`` CLI flags or
+    env vars). Previously this was hardcoded to ``http://localhost:8000``,
+    which broke the bot's HTTP calls to the API when the user started the
+    server on a different port (e.g. ``python main.py --local --port 8095``).
     """
     os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///nationcraft.db"
     # Clear REDIS_URL so local dev doesn't try to connect to a Redis that
     # almost certainly isn't running. The API will use InMemoryRateLimiter
     # instead, which is fine for single-process local dev.
     os.environ["REDIS_URL"] = ""
-    os.environ["API_BASE_URL"] = "http://localhost:8000"
+    # Build the API base URL from the current API_HOST/API_PORT settings
+    # (which may have been overridden by --host/--port CLI flags or env
+    # vars). We read them from the existing settings singleton BEFORE
+    # re-creating it below.
+    from nationcraft.core.config import settings as _pre_settings
+    api_host = _pre_settings.API_HOST
+    api_port = _pre_settings.API_PORT
+    # If the host is 0.0.0.0 (bind-all), use localhost for the client URL.
+    if api_host == "0.0.0.0" or api_host == "::":
+        api_host = "localhost"
+    os.environ["API_BASE_URL"] = f"http://{api_host}:{api_port}"
     # Reload settings so they pick up the new env values.
     from nationcraft.core.config import settings as _settings, Settings
     new = Settings()

@@ -9,6 +9,7 @@ import aiohttp
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.client.session.aiohttp import AiohttpSession
+from aiogram.client.telegram import TelegramAPIServer
 from aiogram.enums import ParseMode
 from aiogram.exceptions import TelegramNetworkError, TelegramBadRequest
 from aiogram.fsm.storage.memory import MemoryStorage
@@ -159,6 +160,29 @@ def _build_aiogram_session() -> AiohttpSession:
     )
 
 
+def _build_api_server() -> TelegramAPIServer:
+    """Build the TelegramAPIServer based on ``settings.TELEGRAM_API_BASE``.
+
+    Defaults to ``https://api.telegram.org`` (production). When set to
+    a local URL (e.g. ``http://localhost:8081``), the bot will talk to
+    a local mock Telegram Bot API server instead — this is how the
+    end-to-end tests exercise the bot's real HTTP interaction without
+    needing network access to api.telegram.org.
+
+    ``TelegramAPIServer.from_base`` expects just the origin (e.g.
+    ``http://localhost:8081``) and appends ``/bot{token}/{method}``
+    itself. We strip any existing suffix to avoid doubling it.
+    """
+    base = settings.TELEGRAM_API_BASE or "https://api.telegram.org"
+    base = base.rstrip("/")
+    # Strip any existing /bot{token}/{method} suffix — from_base will
+    # re-add it. This makes the setting idempotent whether the user
+    # provides just the origin or the full template.
+    if base.endswith("/bot{token}/{method}"):
+        base = base[: -len("/bot{token}/{method}")]
+    return TelegramAPIServer.from_base(base)
+
+
 async def run_bot(use_webhook: bool = False) -> None:
     configure_logging(settings.LOG_LEVEL, settings.LOG_FORMAT)
     if not settings.TELEGRAM_BOT_TOKEN:
@@ -185,6 +209,13 @@ async def run_bot(use_webhook: bool = False) -> None:
         default=DefaultBotProperties(parse_mode=None),
         session=session,
     )
+    # Honor TELEGRAM_API_BASE so the bot can be pointed at a local mock
+    # Telegram Bot API server for end-to-end testing (bypassing the real
+    # api.telegram.org, which is blocked in some regions like Iran).
+    api_server = _build_api_server()
+    bot.session.api = api_server
+    if settings.TELEGRAM_API_BASE and settings.TELEGRAM_API_BASE != "https://api.telegram.org":
+        log.info("bot.api_base.custom", base=settings.TELEGRAM_API_BASE)
     dp = build_dispatcher()
 
     if settings.TELEGRAM_PROXY:

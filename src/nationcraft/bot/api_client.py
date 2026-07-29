@@ -44,7 +44,7 @@ from typing import Any
 import httpx
 
 from nationcraft.core.config import settings
-from nationcraft.core.exceptions import NationCraftError, AuthenticationError
+from nationcraft.core.exceptions import NationCraftError, AuthenticationError, is_transient_error
 
 
 # Per-call timeouts:
@@ -331,10 +331,41 @@ class ApiClient:
     # ---- auth ----
 
     async def register(self, telegram_id: int, password: str, username: str | None = None, locale: str = "en") -> dict:
-        data = await self._request("POST", "/auth/register",
-                                  json={"telegram_id": telegram_id, "password": password,
-                                        "username": username, "locale": locale},
-                                  timeout=_AUTH_TIMEOUT)
+        """Register a new player.
+
+        Adds a single retry on transient network errors (timeout,
+        connection reset) before giving up. This is the fix for the
+        reported symptom where the bot showed "api_timeout" even
+        though the API actually succeeded (200) or returned a
+        definitive error (409) — the httpx client's connection was
+        stale (half-open TCP) and the FIRST attempt failed, but a
+        fresh attempt would have succeeded.
+
+        The retry only fires for transient errors (502/503/504,
+        api_timeout, api_unreachable). Definitive errors (401, 409,
+        422) are raised immediately without retry.
+        """
+        last_exc: NationCraftError | None = None
+        for attempt in range(2):  # 1 initial + 1 retry
+            try:
+                data = await self._request("POST", "/auth/register",
+                                          json={"telegram_id": telegram_id, "password": password,
+                                                "username": username, "locale": locale},
+                                          timeout=_AUTH_TIMEOUT)
+                break  # success
+            except NationCraftError as exc:
+                if not is_transient_error(exc):
+                    raise  # definitive error — don't retry
+                last_exc = exc
+                if attempt == 0:
+                    await asyncio.sleep(0.3)  # brief backoff before retry
+                    continue
+                raise  # already retried — give up
+        else:
+            # Loop exited without break — shouldn't happen, but be safe.
+            if last_exc:
+                raise last_exc
+            raise NationCraftError("register failed", code="api_error", status_code=500)
         # Defensive: if the API returned a valid response but without
         # the expected access_token field, raise a clear error instead
         # of a cryptic KeyError that gets caught by the generic
@@ -350,9 +381,29 @@ class ApiClient:
         return data
 
     async def login(self, telegram_id: int, password: str) -> dict:
-        data = await self._request("POST", "/auth/login",
-                                  json={"telegram_id": telegram_id, "password": password},
-                                  timeout=_AUTH_TIMEOUT)
+        """Login an existing player.
+
+        Same retry-on-transient-error semantics as ``register``.
+        """
+        last_exc: NationCraftError | None = None
+        for attempt in range(2):
+            try:
+                data = await self._request("POST", "/auth/login",
+                                          json={"telegram_id": telegram_id, "password": password},
+                                          timeout=_AUTH_TIMEOUT)
+                break
+            except NationCraftError as exc:
+                if not is_transient_error(exc):
+                    raise
+                last_exc = exc
+                if attempt == 0:
+                    await asyncio.sleep(0.3)
+                    continue
+                raise
+        else:
+            if last_exc:
+                raise last_exc
+            raise NationCraftError("login failed", code="api_error", status_code=500)
         access = data.get("access_token")
         if not access:
             raise NationCraftError(
