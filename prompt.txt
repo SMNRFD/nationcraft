@@ -79,3 +79,123 @@ LOGS IN THE PASTED CONTENT.
 READ IT COMPLETE AND FIX ALL BUGS AND PROBLEMS.
 AND MAKE SURE THE LANGUAGE CHANGE APPLYING WORK.
 FULLY COMPLETE DEEPLY FIX ALL THE BUGS AND PROBLEMS.
+
+---
+
+FULLY COMPLETE DEEPLY FIX THE TELEGRAM BOT IMPLEMENTATION.
+TELEGRAM IS NOT WORKING.
+FULLY DEEPLY FIX THE TELEGRAM BOT.
+
+---
+
+game bot, [7/28/2026 9:42 PM]
+❌ cannot reach the game server. Is the API running?
+
+YSN RFD, [7/28/2026 9:42 PM]
+/status
+
+game bot, [7/28/2026 9:43 PM]
+Please choose a password (min 8 chars). I will hash it with Argon2id.
+
+YSN RFD, [7/28/2026 9:43 PM]
+/register
+
+game bot, [7/28/2026 9:43 PM]
+❌ cannot reach the game server. Is the API running?
+
+YSN RFD, [7/28/2026 9:43 PM]
+q2e4t6u8
+
+game bot, [7/28/2026 9:43 PM]
+Please choose a password (min 8 chars). I will hash it with Argon2id.
+
+YSN RFD, [7/28/2026 9:43 PM]
+/register
+
+game bot, [7/28/2026 9:43 PM]
+❌ cannot reach the game server. Is the API running?
+
+YSN RFD, [7/28/2026 9:43 PM]
+q2e4t6u8
+
+game bot, [7/28/2026 10:52 PM]
+Welcome to NationCraft, YSN RFD!
+
+Type /register to create an account, or /login if you already have one.
+
+YSN RFD, [7/28/2026 10:52 PM]
+/start
+
+YSN RFD, [7/28/2026 10:52 PM]
+/register
+
+game bot, [7/28/2026 10:53 PM]
+Please choose a password (min 8 chars). I will hash it with Argon2id.
+
+YSN RFD, [7/28/2026 10:53 PM]
+q2e4t6u8
+
+game bot, [7/28/2026 10:53 PM]
+⚠️ Cannot reach the game server.
+
+Error: api_timeout — request timed out — the server may be overloaded. Please try again.
+
+Make sure you ran `python main.py --local` (not just --only bot). Type /status to diagnose. You can retry by sending the password again.
+
+YSN RFD, [7/28/2026 10:54 PM]
+/status
+
+game bot, [7/28/2026 10:54 PM]
+❌ request timed out — the server may be overloaded. Please try again.
+
+---
+
+C:\Users\SMN\Desktop\Python\Game\Telegram_Bot\Nationcraft\nationcraft>python main.py --local
+2026-07-28 22:52:06 [info     ] main.config.local_overrides_applied api_base_url=http://localhost:8000 database_url=sqlite+aiosqlite:///nationcraft.db redis_url='(in-memory fallback)'
+2026-07-28T19:22:06.952714Z [info     ] main.start                     env=development host=0.0.0.0 local=True only=None port=8000
+2026-07-28T19:22:07.112402Z [info     ] api.starting                   host=0.0.0.0 port=8000 reload=False
+Started server process [444]
+Waiting for application startup.
+2026-07-28T19:22:08.913550Z [info     ] plugin.discovered              dir=plugins\space_race plugin=space_race
+2026-07-28T19:22:08.918396Z [info     ] space_race.starting            config={}
+2026-07-28T19:22:08.919392Z [info     ] plugin.resource.registered     key=plasma
+2026-07-28T19:22:08.920392Z [info     ] plugin.building.registered     key=fusion_reactor
+2026-07-28T19:22:08.920392Z [info     ] plugin.tech.registered         key=fusion_drive
+2026-07-28T19:22:08.921574Z [info     ] space_race.registered
+2026-07-28T19:22:08.922593Z [info     ] plugin.loaded                  plugin=space_race version=1.0.0
+2026-07-28T19:22:08.922593Z [info     ] tick.handlers.registered
+2026-07-28T19:22:08.922593Z [info     ] worker.starting                interval=60
+2026-07-28T19:22:08.923589Z [info     ] tick.runner.start              interval=60
+2026-07-28T19:22:19.346680Z [info     ] bot.starting                   webhook=False
+2026-07-28T19:22:20.046746Z [info     ] api.startup                    env=development
+2026-07-28T19:22:20.195212Z [info     ] api.db.ok
+2026-07-28T19:22:21.036217Z [info     ] api.redis.skipped              reason='REDIS_URL not set (in-memory fallback)'
+2026-07-28T19:22:21.609197Z [info     ] i18n.loaded                    locales=['en', 'fa']
+Application startup complete.
+Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+2026-07-28T19:22:23.926674Z [info     ] bot.start                      id=8937387510 username=gameruletbot
+Start polling
+Run polling for bot @gameruletbot id=8937387510 - 'game bot'
+Update id=960959498 is not handled. Duration 0 ms by bot id=8937387510
+Update id=960959497 is handled. Duration 1532 ms by bot id=8937387510
+Update id=960959499 is handled. Duration 9437 ms by bot id=8937387510
+Update id=960959500 is handled. Duration 9296 ms by bot id=8937387510
+2026-07-28T19:23:32.274358Z [info     ] http.request                   duration_ms=10.49 method=POST path=/auth/register request_id=d75fe943-631a-4ebc-b61d-61799a0d6628 status=409
+Update id=960959501 is handled. Duration 19328 ms by bot id=8937387510
+2026-07-28T19:24:04.356340Z [info     ] http.request                   duration_ms=3.04 method=GET path=/health request_id=25a02ca5-4c86-4c88-94b3-4b7f69ab957a status=200
+Update id=960959502 is handled. Duration 38937 ms by bot id=8937387510
+Failed to fetch updates - TelegramNetworkError: HTTP Client says - ClientOSError: [WinError 10054] An existing connection was forcibly closed by the remote host
+Sleep for 1.000000 seconds and try again... (tryings = 0, bot id = 8937387510)
+Failed to fetch updates - TelegramNetworkError: HTTP Client says - ClientConnectorError: Cannot connect to host api.telegram.org:443 ssl:default [None]
+Sleep for 1.533389 seconds and try again... (tryings = 1, bot id = 8937387510)
+Connection established (tryings = 2, bot id = 8937387510)
+Update id=960959503 is handled. Duration 4140 ms by bot id=8937387510
+Update id=960959504 is handled. Duration 1141 ms by bot id=8937387510
+2026-07-28T19:28:10.224867Z [info     ] http.request                   duration_ms=3.83 method=GET path=/social/notifications request_id=18efdbbd-6e2c-4ca1-8909-e2fa4d672960 status=401
+Update id=960959505 is handled. Duration 16233 ms by bot id=8937387510
+---
+FULLY COMPLETE READ THE CODEBASE.
+
+---
+
+FIX ALL BUGS AND PROBLEMS FULLY.
