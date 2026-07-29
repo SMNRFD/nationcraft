@@ -106,18 +106,18 @@ def test_build_api_server_strips_existing_suffix():
 
 
 # ---------------------------------------------------------------------
-# api_client.register retries on transient errors
+# api_client.register/login do NOT retry (avoid duplicate sessions)
 # ---------------------------------------------------------------------
 
 @pytest.mark.asyncio
-async def test_register_retries_on_transient_error():
-    """register() should retry once on a transient error (503, timeout)
-    and succeed if the second attempt works.
+async def test_register_does_not_retry_on_transient_error():
+    """register() should NOT retry on transient errors (503, timeout).
 
-    This is the fix for the reported symptom where the bot showed
-    "api_timeout" even though the API actually succeeded — the httpx
-    client's first attempt had a stale connection, but a fresh attempt
-    would have worked.
+    On a throttled network (Iran), the event loop can be blocked by a
+    slow Telegram send, causing httpx to raise ReadTimeout EVEN THOUGH
+    the API successfully processed the request. Retrying in that case
+    creates DUPLICATE sessions at the API. Instead, we fail fast and
+    let the user retry manually.
     """
     from nationcraft.bot.api_client import ApiClient
     from nationcraft.core.exceptions import NationCraftError
@@ -128,21 +128,16 @@ async def test_register_retries_on_transient_error():
 
     async def _mock_request(method, path, **kwargs):
         call_count["n"] += 1
-        if call_count["n"] == 1:
-            # First attempt: transient error (503)
-            raise NationCraftError("service unavailable", code="api_error", status_code=503)
-        # Second attempt: success
-        return {"access_token": "tok-123", "refresh_token": "ref-456"}
+        raise NationCraftError("service unavailable", code="api_error", status_code=503)
 
     client._request = _mock_request  # type: ignore[assignment]
 
-    data = await client.register(telegram_id=123, password="password123")
+    with pytest.raises(NationCraftError):
+        await client.register(telegram_id=123, password="password123")
 
-    assert call_count["n"] == 2, (
-        f"expected 2 attempts (1 fail + 1 retry), got {call_count['n']}"
+    assert call_count["n"] == 1, (
+        f"expected 1 attempt (no retry on transient), got {call_count['n']}"
     )
-    assert data["access_token"] == "tok-123"
-    assert client.get_token(123) == "tok-123"
 
 
 @pytest.mark.asyncio
@@ -173,9 +168,9 @@ async def test_register_does_not_retry_on_definitive_error():
 
 
 @pytest.mark.asyncio
-async def test_register_gives_up_after_two_transient_errors():
-    """If both attempts fail with transient errors, register() should
-    raise the last error."""
+async def test_register_raises_on_transient_error():
+    """If the API call fails with a transient error, register() should
+    raise immediately (1 attempt, no retry)."""
     from nationcraft.bot.api_client import ApiClient
     from nationcraft.core.exceptions import NationCraftError
 
@@ -193,14 +188,14 @@ async def test_register_gives_up_after_two_transient_errors():
         await client.register(telegram_id=123, password="password123")
 
     assert exc_info.value.code == "api_timeout"
-    assert call_count["n"] == 2, (
-        f"expected 2 attempts (both failed), got {call_count['n']}"
+    assert call_count["n"] == 1, (
+        f"expected 1 attempt (no retry), got {call_count['n']}"
     )
 
 
 @pytest.mark.asyncio
-async def test_login_retries_on_transient_error():
-    """login() should have the same retry semantics as register()."""
+async def test_login_does_not_retry_on_transient_error():
+    """login() should NOT retry on transient errors (same as register)."""
     from nationcraft.bot.api_client import ApiClient
     from nationcraft.core.exceptions import NationCraftError
 
@@ -210,16 +205,16 @@ async def test_login_retries_on_transient_error():
 
     async def _mock_request(method, path, **kwargs):
         call_count["n"] += 1
-        if call_count["n"] == 1:
-            raise NationCraftError("timeout", code="api_timeout", status_code=504)
-        return {"access_token": "tok-123", "refresh_token": "ref-456"}
+        raise NationCraftError("timeout", code="api_timeout", status_code=504)
 
     client._request = _mock_request  # type: ignore[assignment]
 
-    data = await client.login(telegram_id=123, password="password123")
+    with pytest.raises(NationCraftError):
+        await client.login(telegram_id=123, password="password123")
 
-    assert call_count["n"] == 2
-    assert data["access_token"] == "tok-123"
+    assert call_count["n"] == 1, (
+        f"expected 1 attempt (no retry on transient), got {call_count['n']}"
+    )
 
 
 @pytest.mark.asyncio

@@ -140,7 +140,7 @@ async def test_api_client_refresh_failure_clears_tokens():
 
 def test_api_client_timeout_is_bounded():
     """The httpx client should be configured with a bounded default timeout
-    (8s read) and a longer auth timeout (12s read) for register/login.
+    (8s read) and an 8s auth timeout for register/login.
 
     History:
     - 5s (original) — too short, caused ReadTimeout on Argon2 hashing.
@@ -148,20 +148,21 @@ def test_api_client_timeout_is_bounded():
       bot's per-chat dispatcher for 15s, queuing all subsequent updates
       for that chat. On a slow Iranian network the queued updates
       compounded, producing the reported 19-38s update durations.
-    - 8s default + 12s auth (current) — 8s covers Argon2 ~500ms + DB I/O
+    - 8s default + 12s auth (third attempt) — still too long for auth
+      on throttled networks; 12s meant each login attempt blocked the
+      event loop for 12s.
+    - 8s default + 8s auth (current) — 8s covers Argon2 ~500ms + DB I/O
       ~2s + event-bus publish with comfortable margin; lets the bot
-      recover quickly when the API is genuinely broken. 12s for
-      auth endpoints because Argon2 with RFC 9106 parameters can spike
-      to 1-2s under load; we'd rather wait than tell the user "timeout"
-      when the operation is succeeding.
+      recover quickly when the API is genuinely broken. Auth uses the
+      same 8s (was 12s) to fail fast on throttled networks.
     """
     import httpx
     from nationcraft.bot.api_client import _DEFAULT_TIMEOUT, _AUTH_TIMEOUT
     # Default read timeout should be 8s (was 15s — too long).
     assert _DEFAULT_TIMEOUT.read == pytest.approx(8.0)
     assert _DEFAULT_TIMEOUT.connect == pytest.approx(2.0)
-    # Auth endpoints should use 12s (Argon2 spikes).
-    assert _AUTH_TIMEOUT.read == pytest.approx(12.0)
+    # Auth endpoints should use 8s (was 12s — too long on throttled networks).
+    assert _AUTH_TIMEOUT.read == pytest.approx(8.0)
 
 
 def test_api_client_base_url_picks_up_local_override():

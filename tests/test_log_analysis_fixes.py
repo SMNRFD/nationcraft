@@ -76,7 +76,7 @@ def test_bot_default_parse_mode_is_none():
 
 def test_api_client_timeout_is_bounded():
     """The API client read timeout should be bounded to ~8s for regular
-    calls and ~12s for auth (Argon2) calls.
+    calls and ~8s for auth (Argon2) calls.
 
     Previously 5s was too short (Argon2 + DB I/O could exceed 5s on
     slow Windows, causing spurious ``httpx.ReadTimeout``).
@@ -87,20 +87,19 @@ def test_api_client_timeout_is_bounded():
     Iranian network the queued updates compounded, producing the
     reported 19-38s update durations.
 
-    The new behavior:
+    The current behavior:
     - Default read timeout: 8s (covers Argon2 ~500ms + DB I/O ~2s +
       event-bus publish with comfortable margin; lets the bot
       recover quickly when the API is genuinely broken).
-    - Auth (register/login) read timeout: 12s (Argon2 with RFC 9106
-      parameters can spike to 1-2s under load; we'd rather wait than
-      tell the user "timeout" when the operation is succeeding).
+    - Auth (register/login) read timeout: 8s (was 12s — reduced to
+      fail fast on throttled networks; 8s is still plenty for Argon2).
     """
     from nationcraft.bot.api_client import _DEFAULT_TIMEOUT, _AUTH_TIMEOUT
     assert _DEFAULT_TIMEOUT.read == pytest.approx(8.0), (
         f"expected default read timeout=8.0s, got {_DEFAULT_TIMEOUT.read}s"
     )
-    assert _AUTH_TIMEOUT.read == pytest.approx(12.0), (
-        f"expected auth read timeout=12.0s, got {_AUTH_TIMEOUT.read}s"
+    assert _AUTH_TIMEOUT.read == pytest.approx(8.0), (
+        f"expected auth read timeout=8.0s, got {_AUTH_TIMEOUT.read}s"
     )
 
 

@@ -65,6 +65,7 @@ auth:
 
     Have fun! 🏰
   already_registered: "ℹ️ You are already registered. Type /login to sign in, or /panel to manage your account."
+  already_logged_in: "✅ You are already logged in. Type /logout first if you want to re-authenticate."
   must_login_first: "⚠️ You must /login first to use this command."
   login_prompt: "Please send your password."
   login_success: "✅ Logged in. Type /play to continue."

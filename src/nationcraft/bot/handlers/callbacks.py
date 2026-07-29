@@ -13,6 +13,7 @@ from nationcraft.bot.keyboards import (
     paginate,
     paginated_keyboard,
 )
+from nationcraft.bot.utils import safe_edit as _safe_edit, safe_answer as _safe_answer
 from nationcraft.core.exceptions import NationCraftError
 from nationcraft.core.i18n import _
 from nationcraft.core.logging import get_logger
@@ -20,71 +21,49 @@ from nationcraft.core.logging import get_logger
 log = get_logger(__name__)
 
 
-async def _safe_answer(cb: CallbackQuery, text: str = "", show_alert: bool = False) -> None:
-    """Answer a callback query, ignoring 'query is too old' errors.
-
-    Telegram expires callback queries after ~30 seconds. If the bot
-    took too long (e.g. API timeout), calling ``cb.answer()`` raises
-    ``TelegramBadRequest: query is too old``. This helper swallows
-    that specific error so it doesn't cascade into an unhandled exception.
-    """
-    try:
-        await cb.answer(text=text, show_alert=show_alert)
-    except TelegramBadRequest as exc:
-        if "query is too old" in str(exc) or "query ID is invalid" in str(exc):
-            log.debug("bot.callback.expired", callback_data=cb.data)
-        else:
-            log.warning("bot.callback.answer_failed", error=str(exc)[:200])
-    except Exception as exc:  # noqa: BLE001
-        log.warning("bot.callback.answer_failed", error=str(exc)[:200])
-
-
-async def _safe_edit(message, text: str, reply_markup=None, parse_mode: str = "Markdown") -> None:
-    """Edit a message, ignoring 'message is not modified' errors.
-
-    Telegram raises ``TelegramBadRequest: message is not modified`` when
-    the new content is identical to the current content (e.g. user
-    clicks the same button twice). This helper swallows that specific
-    error so the UX feels seamless.
-
-    If the message fails to parse as Markdown, it retries as plain text.
-    """
-    try:
-        await message.edit_text(text, reply_markup=reply_markup, parse_mode=parse_mode)
-    except TelegramBadRequest as exc:
-        msg = str(exc).lower()
-        if "message is not modified" in msg:
-            log.debug("bot.edit.unchanged")
-            return
-        if "can't parse entities" in msg:
-            # Markdown parse error — retry as plain text.
-            from nationcraft.bot.utils import _strip_md
-            try:
-                await message.edit_text(
-                    _strip_md(text), reply_markup=reply_markup, parse_mode=None
-                )
-            except TelegramBadRequest:
-                pass
-            return
-        log.warning("bot.edit.failed", error=str(exc)[:200])
-    except Exception as exc:  # noqa: BLE001
-        log.warning("bot.edit.failed", error=str(exc)[:200])
-
-
 async def _safe_api_call(cb: CallbackQuery, locale: str, coro):
     """Run an API call; on connection error, show a friendly message.
+
+    CRITICAL: This function checks for a token BEFORE making the API call.
+    If the token is missing (user not logged in), it shows "please /login
+    first" instead of making a 401 API call. This prevents the 401 cascade
+    that occurs when a queued ``/login`` command evicts the token between
+    a successful login and the user's button clicks.
 
     Returns the result on success, or ``None`` on failure (after
     showing an error to the user).
     """
+    # Check for token before making the API call. If the user isn't
+    # logged in (e.g. their token was evicted by a queued /login),
+    # show a friendly message instead of triggering a 401 → refresh
+    # → clear_token cascade.
+    tid = cb.from_user.id
+    if not api_client.get_token(tid):
+        await _safe_edit(
+            cb.message,
+            _("auth.must_login_first", locale=locale),
+            reply_markup=main_menu_keyboard(),
+        )
+        await _safe_answer(cb)
+        return None
+
     try:
         return await coro
     except NationCraftError as exc:
-        await _safe_edit(
-            cb.message,
-            _("errors.error_with_message", locale=locale, message=str(exc)),
-            reply_markup=main_menu_keyboard(),
-        )
+        # If the error is an auth error, the token was evicted by _request.
+        # Show "please /login first" instead of the raw error message.
+        if exc.status_code == 401 or exc.code == "authentication_failed":
+            await _safe_edit(
+                cb.message,
+                _("auth.must_login_first", locale=locale),
+                reply_markup=main_menu_keyboard(),
+            )
+        else:
+            await _safe_edit(
+                cb.message,
+                _("errors.error_with_message", locale=locale, message=str(exc)),
+                reply_markup=main_menu_keyboard(),
+            )
         await _safe_answer(cb)
         return None
     except Exception as exc:  # noqa: BLE001
@@ -100,6 +79,55 @@ async def _safe_api_call(cb: CallbackQuery, locale: str, coro):
 
 
 router = Router()
+
+
+async def _require_auth(cb: CallbackQuery, locale: str = "en") -> bool:
+    """Check if the user is authenticated. If not, show a "please /login"
+    message and return False. Callers should ``return`` early if this
+    returns False.
+
+    This prevents the 401 cascade that occurs when a queued ``/login``
+    command evicts the token between a successful login and the user's
+    button clicks.
+    """
+    if not api_client.get_token(cb.from_user.id):
+        await _safe_edit(
+            cb.message,
+            _("auth.must_login_first", locale=locale),
+            reply_markup=main_menu_keyboard(),
+        )
+        await _safe_answer(cb)
+        return False
+    return True
+
+
+async def _handle_api_error(cb: CallbackQuery, exc: Exception, locale: str = "en") -> None:
+    """Show a user-friendly error message for an API exception.
+
+    If the error is an auth error (401), shows "please /login first"
+    instead of the raw error message (which might be confusing).
+    """
+    if isinstance(exc, NationCraftError):
+        if exc.status_code == 401 or exc.code == "authentication_failed":
+            await _safe_edit(
+                cb.message,
+                _("auth.must_login_first", locale=locale),
+                reply_markup=main_menu_keyboard(),
+            )
+        else:
+            await _safe_edit(
+                cb.message,
+                _("errors.error_with_message", locale=locale, message=str(exc)),
+                reply_markup=main_menu_keyboard(),
+            )
+    else:
+        log.warning("bot.api.connection_error", error=str(exc)[:200])
+        await _safe_edit(
+            cb.message,
+            _("errors.api_unreachable", locale=locale),
+            reply_markup=main_menu_keyboard(),
+        )
+    await _safe_answer(cb)
 
 
 # -------------------- home --------------------
@@ -122,13 +150,14 @@ async def cb_noop(cb: CallbackQuery) -> None:
 # -------------------- country --------------------
 
 @router.callback_query(F.data == "menu:country")
-async def cb_country(cb: CallbackQuery) -> None:
+async def cb_country(cb: CallbackQuery, locale: str = "en") -> None:
+    if not await _require_auth(cb, locale):
+        return
     tid = cb.from_user.id
     try:
         snapshot = await api_client.my_country(tid)
-    except NationCraftError as exc:
-        await _safe_edit(cb.message, f"❌ {exc}", reply_markup=main_menu_keyboard())
-        await _safe_answer(cb)
+    except Exception as exc:
+        await _handle_api_error(cb, exc, locale)
         return
     if not snapshot:
         kb = InlineKeyboardBuilder()
@@ -166,13 +195,14 @@ async def cb_country(cb: CallbackQuery) -> None:
 # -------------------- worlds & country selection --------------------
 
 @router.callback_query(F.data.startswith("worlds:"))
-async def cb_worlds(cb: CallbackQuery) -> None:
+async def cb_worlds(cb: CallbackQuery, locale: str = "en") -> None:
+    if not await _require_auth(cb, locale):
+        return
     tid = cb.from_user.id
     try:
         worlds = await api_client.list_worlds(tid)
-    except NationCraftError as exc:
-        await _safe_edit(cb.message, f"❌ {exc}")
-        await _safe_answer(cb)
+    except Exception as exc:
+        await _handle_api_error(cb, exc, locale)
         return
     page_idx = int(cb.data.split(":p")[1]) if ":p" in cb.data else 0
     page = paginate(worlds, page_idx, page_size=5)
@@ -187,14 +217,15 @@ async def cb_worlds(cb: CallbackQuery) -> None:
 
 
 @router.callback_query(F.data.startswith("world:"))
-async def cb_world_detail(cb: CallbackQuery) -> None:
+async def cb_world_detail(cb: CallbackQuery, locale: str = "en") -> None:
+    if not await _require_auth(cb, locale):
+        return
     tid = cb.from_user.id
     world_id = int(cb.data.split(":")[1])
     try:
         countries = await api_client.list_available_countries(tid, world_id)
-    except NationCraftError as exc:
-        await _safe_edit(cb.message, f"❌ {exc}")
-        await _safe_answer(cb)
+    except Exception as exc:
+        await _handle_api_error(cb, exc, locale)
         return
     if not countries:
         await _safe_edit(cb.message, 
@@ -216,14 +247,15 @@ async def cb_world_detail(cb: CallbackQuery) -> None:
 
 
 @router.callback_query(F.data.startswith("sel:"))
-async def cb_select_country(cb: CallbackQuery) -> None:
+async def cb_select_country(cb: CallbackQuery, locale: str = "en") -> None:
+    if not await _require_auth(cb, locale):
+        return
     tid = cb.from_user.id
     _, world_id, code = cb.data.split(":")
     try:
         result = await api_client.select_country(tid, int(world_id), code)
-    except NationCraftError as exc:
-        await _safe_edit(cb.message, f"❌ {exc}", reply_markup=main_menu_keyboard())
-        await _safe_answer(cb)
+    except Exception as exc:
+        await _handle_api_error(cb, exc, locale)
         return
     await _safe_edit(cb.message,
         f"✅ You are now the ruler of *{result['name']}* {result['flag_emoji']}!",
@@ -236,13 +268,14 @@ async def cb_select_country(cb: CallbackQuery) -> None:
 # -------------------- production --------------------
 
 @router.callback_query(F.data == "menu:production")
-async def cb_production(cb: CallbackQuery) -> None:
+async def cb_production(cb: CallbackQuery, locale: str = "en") -> None:
+    if not await _require_auth(cb, locale):
+        return
     tid = cb.from_user.id
     try:
         buildings = await api_client.list_buildings(tid)
-    except NationCraftError as exc:
-        await _safe_edit(cb.message, f"❌ {exc}")
-        await _safe_answer(cb)
+    except Exception as exc:
+        await _handle_api_error(cb, exc, locale)
         return
     if not buildings:
         # No buildings yet — show the "build new" entry directly so the
@@ -298,8 +331,10 @@ async def cb_build_choose_count(cb: CallbackQuery) -> None:
 
 
 @router.callback_query(F.data.startswith("build2:"))
-async def cb_build_confirm(cb: CallbackQuery) -> None:
+async def cb_build_confirm(cb: CallbackQuery, locale: str = "en") -> None:
     """Confirm construction — calls ``POST /production/build``."""
+    if not await _require_auth(cb, locale):
+        return
     tid = cb.from_user.id
     _, key, count = cb.data.split(":")
     try:
@@ -309,8 +344,9 @@ async def cb_build_confirm(cb: CallbackQuery) -> None:
             f"✅ Construction started for {count} × {key}.\nBuilding IDs: {ids}",
             reply_markup=main_menu_keyboard(),
         )
-    except NationCraftError as exc:
-        await _safe_edit(cb.message, f"❌ {exc}", reply_markup=main_menu_keyboard())
+    except Exception as exc:
+        await _handle_api_error(cb, exc, locale)
+        return
     await _safe_answer(cb)
 
 
@@ -371,7 +407,9 @@ async def cb_train_choose_count(cb: CallbackQuery) -> None:
 
 
 @router.callback_query(F.data.startswith("train2:"))
-async def cb_train_confirm(cb: CallbackQuery) -> None:
+async def cb_train_confirm(cb: CallbackQuery, locale: str = "en") -> None:
+    if not await _require_auth(cb, locale):
+        return
     tid = cb.from_user.id
     _, key, count = cb.data.split(":")
     try:
@@ -380,8 +418,9 @@ async def cb_train_confirm(cb: CallbackQuery) -> None:
             f"✅ Trained {count} × {key}.\nTotal: {result['total']}",
             reply_markup=main_menu_keyboard(),
         )
-    except NationCraftError as exc:
-        await _safe_edit(cb.message, f"❌ {exc}", reply_markup=main_menu_keyboard())
+    except Exception as exc:
+        await _handle_api_error(cb, exc, locale)
+        return
     await _safe_answer(cb)
 
 

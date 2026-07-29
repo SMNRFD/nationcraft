@@ -111,15 +111,32 @@ async def cmd_register(message: Message, state: FSMContext, locale: str = "en") 
 async def cmd_login(message: Message, state: FSMContext, locale: str = "en") -> None:
     """Start the login flow.
 
-    Evicts any stale local token BEFORE entering the FSM state. This
-    prevents the locale middleware from attempting to call /auth/me with
-    a dead token (which previously caused a 15s hang on the next message
-    when the API was slow to reject the token).
+    IMPORTANT: We do NOT clear the existing token here. Previously, this
+    function called ``api_client.clear_token(user.id)`` unconditionally,
+    which caused a critical race condition:
+
+    1. User logs in successfully → token stored.
+    2. Bot's ``message.answer()`` blocks for 25s on Iran's throttled network.
+    3. User (thinking the bot is broken) sends ``/login`` again → queued.
+    4. Bot processes the queued ``/login`` → ``clear_token()`` evicts the
+       VALID token.
+    5. User's queued button clicks now run with NO token → 401 cascade.
+
+    The fix: only clear the token when the user actually provides a new
+    password (in ``process_login``). If the user is already logged in,
+    we tell them and don't enter the password flow at all.
     """
     await state.clear()
     user = message.from_user
-    # Drop any existing token — the user explicitly asked to log in again.
-    api_client.clear_token(user.id)
+    # If the user already has a token, don't clear it — just tell them
+    # they're already logged in. They can /logout first if they want
+    # to re-authenticate.
+    if api_client.get_token(user.id):
+        await message.answer(
+            _("auth.already_logged_in", locale=locale),
+            reply_markup=main_menu_keyboard(),
+        )
+        return
     await state.set_state(AuthStates.waiting_for_password)
     await message.answer(_("auth.login_prompt", locale=locale))
 

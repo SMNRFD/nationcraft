@@ -40,17 +40,19 @@ from aiogram.exceptions import TelegramBadRequest, TelegramNetworkError
 from aiogram.types import CallbackQuery, Message
 
 # Hard cap on total time spent inside safe_send/safe_edit/safe_answer.
-# 20s is enough for 2 attempts on a slow (Iranian) network where each
-# call takes 5-10s, but short enough that the bot can recover and
-# process queued updates within a reasonable window.
-_TOTAL_TIMEOUT_SECONDS = 20.0
+# Reduced from 20s to 8s — on Iran's network, each Telegram API call
+# can block for 10-30s. A 20s cap meant each handler took up to 20s,
+# which caused updates to queue up and compound (the user's messages
+# from 2 minutes ago were still being processed). 8s is short enough
+# that the bot processes queued updates within a reasonable window,
+# while still giving a slow Telegram API enough time to respond.
+_TOTAL_TIMEOUT_SECONDS = 8.0
 
-# How many retries on network errors. 2 = 1 initial + 1 retry.
-# Combined with the total timeout above, this gives a best-case of
-# 1 attempt (~5-10s) and a worst-case of 2 attempts + 1s sleep
-# (~11-21s). After that we give up silently — the global error
-# handler logs it.
-_MAX_RETRIES = 2
+# How many retries on network errors. 1 = no retry (just the initial
+# attempt). On Iran's throttled network, retrying just compounds the
+# delay — each retry adds 5-10s of blocking. Better to fail fast and
+# let the user retry by clicking the button again.
+_MAX_RETRIES = 1
 
 # Sleep between retries. 1s is enough for a transient TCP reset
 # (the OS re-establishes the connection in <1s). Higher values just

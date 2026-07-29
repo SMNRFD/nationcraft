@@ -99,12 +99,13 @@ async def test_safe_send_succeeds_first_try_is_fast():
 
 
 @pytest.mark.asyncio
-async def test_safe_send_retries_at_most_twice():
-    """``safe_send`` should retry at most 2 times (1 initial + 1 retry)
-    on network errors, not 3 times.
+async def test_safe_send_no_retry_on_network_error():
+    """``safe_send`` should NOT retry on network errors.
 
-    Combined with the 1s sleep between retries, the worst case is
-    ~2 × Telegram-API-call + 1s sleep, well under the 20s total cap.
+    Was 2 retries (1 initial + 1 retry), but on Iran's throttled
+    network each retry adds 5-10s of blocking. Now we fail fast
+    (1 attempt only, ``_MAX_RETRIES=1``) and let the user retry
+    by clicking the button again.
     """
     from aiogram.exceptions import TelegramNetworkError
     from nationcraft.bot.utils import safe_send
@@ -112,24 +113,18 @@ async def test_safe_send_retries_at_most_twice():
     message = MagicMock()
     call_count = {"n": 0}
 
-    async def _fail_twice_then_succeed(*args, **kwargs):
+    async def _always_fail(*args, **kwargs):
         call_count["n"] += 1
-        if call_count["n"] < 3:
-            raise TelegramNetworkError(method=MagicMock(), message="reset")
-        return MagicMock()
+        raise TelegramNetworkError(method=MagicMock(), message="reset")
 
-    message.answer = _fail_twice_then_succeed
+    message.answer = _always_fail
 
-    await safe_send(message, "hello", parse_mode="Markdown")
+    result = await safe_send(message, "hello", parse_mode="Markdown")
 
-    # Should have been called exactly 2 times (1 initial + 1 retry).
-    # The third call should never happen — we only retry once.
-    # Wait — actually if the first two fail and max_retries=2, we
-    # give up after the 2nd failure. Let me re-check the semantics:
-    # max_retries=2 means we attempt at most 2 times total. So if
-    # both fail, we return None without a 3rd attempt.
-    assert call_count["n"] == 2, (
-        f"expected 2 attempts (1 initial + 1 retry), got {call_count['n']}"
+    # Should have been called exactly 1 time (no retry).
+    assert result is None
+    assert call_count["n"] == 1, (
+        f"expected 1 attempt (no retry on network error), got {call_count['n']}"
     )
 
 
@@ -149,16 +144,14 @@ def test_api_client_default_timeout_is_8s():
     assert _DEFAULT_TIMEOUT.read == pytest.approx(8.0)
 
 
-def test_api_client_auth_timeout_is_12s():
-    """Auth endpoints (register/login) should use a 12s timeout.
+def test_api_client_auth_timeout_is_8s():
+    """Auth endpoints (register/login) should use an 8s timeout.
 
-    Argon2 with RFC 9106 parameters (64 MiB memory, 3 iterations,
-    2 parallelism) can take 1-2s on a slow machine under load. We'd
-    rather wait than tell the user "timeout" when the operation is
-    actually succeeding.
+    Was 12s, but reduced to 8s to fail fast on throttled networks.
+    Argon2 takes ~1-2s, so 8s is still plenty of margin.
     """
     from nationcraft.bot.api_client import _AUTH_TIMEOUT
-    assert _AUTH_TIMEOUT.read == pytest.approx(12.0)
+    assert _AUTH_TIMEOUT.read == pytest.approx(8.0)
 
 
 @pytest.mark.asyncio
@@ -630,12 +623,16 @@ def test_run_bot_does_not_mutate_session_attrs():
     )
 
 
-def test_telegram_request_timeout_default_is_15s():
-    """The default ``TELEGRAM_REQUEST_TIMEOUT`` should be 15s
-    (was effectively 60s — aiogram's hardcoded default that the
-    broken code couldn't override)."""
+def test_telegram_request_timeout_default_is_5s():
+    """The default ``TELEGRAM_REQUEST_TIMEOUT`` should be 5s.
+
+    Was 15s, but on Iran's throttled network each blocked send took
+    10-30s. 5s fails fast enough that the bot can process queued
+    updates within a reasonable window, while still being long enough
+    for a normal Telegram API response (~200-500ms).
+    """
     from nationcraft.core.config import Settings
     s = Settings()
-    assert s.TELEGRAM_REQUEST_TIMEOUT == 15.0, (
-        f"expected 15.0, got {s.TELEGRAM_REQUEST_TIMEOUT}"
+    assert s.TELEGRAM_REQUEST_TIMEOUT == 5.0, (
+        f"expected 5.0, got {s.TELEGRAM_REQUEST_TIMEOUT}"
     )

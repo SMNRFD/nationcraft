@@ -77,10 +77,15 @@ class Settings(BaseSettings):
     # for that chat. On a slow Iranian network this compounded to
     # 19-38s update durations and WinError 10054 (the OS forcibly
     # closed the connection before aiogram's 60s timeout fired).
-    # 15s is short enough that the bot recovers and processes queued
-    # updates, long enough that a legitimately slow Telegram response
-    # still has time to arrive.
-    TELEGRAM_REQUEST_TIMEOUT: float = 15.0
+    #
+    # 5s is the optimal value for throttled networks: short enough that
+    # a blocked send fails fast and the bot moves on to the next queued
+    # update (preventing the compound-delay problem), while still long
+    # enough for a normal Telegram API response (~200-500ms). If the
+    # network is healthy, 5s is plenty. If the network is blocked
+    # (Iran), failing in 5s instead of 15s means the user waits 1/3
+    # as long for each reply.
+    TELEGRAM_REQUEST_TIMEOUT: float = 5.0
 
     # ---- Game ----
     TICK_INTERVAL_SECONDS: int = 60

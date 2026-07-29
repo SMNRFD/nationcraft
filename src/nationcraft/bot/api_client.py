@@ -44,7 +44,7 @@ from typing import Any
 import httpx
 
 from nationcraft.core.config import settings
-from nationcraft.core.exceptions import NationCraftError, AuthenticationError, is_transient_error
+from nationcraft.core.exceptions import NationCraftError, AuthenticationError
 
 
 # Per-call timeouts:
@@ -63,10 +63,10 @@ _DEFAULT_TIMEOUT = httpx.Timeout(8.0, connect=2.0, write=5.0, pool=2.0)
 
 # A more generous timeout for the register/login endpoints — Argon2
 # with the default RFC 9106 parameters (64 MiB memory, 3 iterations,
-# 2 parallelism) can take 1-2s on a slow machine under load. We'd
-# rather wait than tell the user "timeout" when the operation is
-# actually succeeding.
-_AUTH_TIMEOUT = httpx.Timeout(12.0, connect=2.0, write=5.0, pool=2.0)
+# 2 parallelism) can take 1-2s on a slow machine under load. 8s gives
+# comfortable margin while still failing fast enough that the bot can
+# process queued updates.
+_AUTH_TIMEOUT = httpx.Timeout(8.0, connect=2.0, write=5.0, pool=2.0)
 
 _DEFAULT_LIMITS = httpx.Limits(max_connections=30, max_keepalive_connections=15)
 
@@ -333,39 +333,23 @@ class ApiClient:
     async def register(self, telegram_id: int, password: str, username: str | None = None, locale: str = "en") -> dict:
         """Register a new player.
 
-        Adds a single retry on transient network errors (timeout,
-        connection reset) before giving up. This is the fix for the
-        reported symptom where the bot showed "api_timeout" even
-        though the API actually succeeded (200) or returned a
-        definitive error (409) — the httpx client's connection was
-        stale (half-open TCP) and the FIRST attempt failed, but a
-        fresh attempt would have succeeded.
+        NOTE: We do NOT retry on transient errors (timeout, connection
+        reset) for register/login. On a throttled network (Iran), the
+        event loop can be blocked by a slow Telegram send, causing
+        httpx to raise ReadTimeout EVEN THOUGH the API successfully
+        processed the request. Retrying in that case creates DUPLICATE
+        sessions at the API — the user ends up with orphaned sessions
+        in the DB.
 
-        The retry only fires for transient errors (502/503/504,
-        api_timeout, api_unreachable). Definitive errors (401, 409,
-        422) are raised immediately without retry.
+        Instead, we fail fast and let the user retry manually. If the
+        first attempt succeeded, the user's next /register will get 409
+        (player_exists), which the bot handles gracefully ("already
+        registered, please /login").
         """
-        last_exc: NationCraftError | None = None
-        for attempt in range(2):  # 1 initial + 1 retry
-            try:
-                data = await self._request("POST", "/auth/register",
-                                          json={"telegram_id": telegram_id, "password": password,
-                                                "username": username, "locale": locale},
-                                          timeout=_AUTH_TIMEOUT)
-                break  # success
-            except NationCraftError as exc:
-                if not is_transient_error(exc):
-                    raise  # definitive error — don't retry
-                last_exc = exc
-                if attempt == 0:
-                    await asyncio.sleep(0.3)  # brief backoff before retry
-                    continue
-                raise  # already retried — give up
-        else:
-            # Loop exited without break — shouldn't happen, but be safe.
-            if last_exc:
-                raise last_exc
-            raise NationCraftError("register failed", code="api_error", status_code=500)
+        data = await self._request("POST", "/auth/register",
+                                  json={"telegram_id": telegram_id, "password": password,
+                                        "username": username, "locale": locale},
+                                  timeout=_AUTH_TIMEOUT)
         # Defensive: if the API returned a valid response but without
         # the expected access_token field, raise a clear error instead
         # of a cryptic KeyError that gets caught by the generic
@@ -383,27 +367,12 @@ class ApiClient:
     async def login(self, telegram_id: int, password: str) -> dict:
         """Login an existing player.
 
-        Same retry-on-transient-error semantics as ``register``.
+        Same no-retry semantics as ``register`` — see the docstring there
+        for why retrying on timeout creates duplicate sessions.
         """
-        last_exc: NationCraftError | None = None
-        for attempt in range(2):
-            try:
-                data = await self._request("POST", "/auth/login",
-                                          json={"telegram_id": telegram_id, "password": password},
-                                          timeout=_AUTH_TIMEOUT)
-                break
-            except NationCraftError as exc:
-                if not is_transient_error(exc):
-                    raise
-                last_exc = exc
-                if attempt == 0:
-                    await asyncio.sleep(0.3)
-                    continue
-                raise
-        else:
-            if last_exc:
-                raise last_exc
-            raise NationCraftError("login failed", code="api_error", status_code=500)
+        data = await self._request("POST", "/auth/login",
+                                  json={"telegram_id": telegram_id, "password": password},
+                                  timeout=_AUTH_TIMEOUT)
         access = data.get("access_token")
         if not access:
             raise NationCraftError(

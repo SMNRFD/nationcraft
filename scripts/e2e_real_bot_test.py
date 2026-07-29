@@ -368,20 +368,30 @@ async def main() -> int:
                         f"expected 'already registered', got: {[m['text'][:80] for m in msgs]}"
                     _log("  ✓ Bot recognized existing user (already registered)")
 
-                    # ---- Scenario 5: /login → asks for password ----
-                    _log("Test 5: /login command...")
+                    # ---- Scenario 5: /login → "already logged in" (user has token from registration) ----
+                    _log("Test 5: /login command (already logged in)...")
+                    await _reset_mock(client)
+                    await _push_command(client, CHAT_ID, USER_ID, "login")
+                    msgs = await _wait_for_reply(client, CHAT_ID, match="already", timeout=10.0)
+                    assert any("already" in m["text"].lower() for m in msgs), \
+                        f"expected 'already logged in', got: {[m['text'][:80] for m in msgs]}"
+                    _log("  ✓ /login recognized user is already logged in")
+
+                    # ---- Scenario 5b: /logout then /login → asks for password ----
+                    _log("Test 5b: /logout then /login...")
+                    await _reset_mock(client)
+                    await _push_command(client, CHAT_ID, USER_ID, "logout")
+                    await _wait_for_reply(client, CHAT_ID, timeout=10.0)
                     await _reset_mock(client)
                     await _push_command(client, CHAT_ID, USER_ID, "login")
                     msgs = await _wait_for_reply(client, CHAT_ID, match="password", timeout=10.0)
                     assert any("password" in m["text"].lower() for m in msgs), \
                         f"expected password prompt, got: {[m['text'][:80] for m in msgs]}"
-                    _log("  ✓ /login prompted for password")
+                    _log("  ✓ /login prompted for password after /logout")
 
                     # ---- Scenario 6: send correct password → login success ----
                     _log("Test 6: send correct password (login)...")
-                    await _reset_mock(client)
-                    await _push_command(client, CHAT_ID, USER_ID, "login")
-                    await _wait_for_reply(client, CHAT_ID, match="password", timeout=10.0)
+                    # User already in waiting_for_password state from Test 5b.
                     await _push_message(client, CHAT_ID, USER_ID, "TestPass1234")
                     msgs = await _wait_for_reply(client, CHAT_ID, match="logged", timeout=15.0)
                     assert any("logged" in m["text"].lower() or "success" in m["text"].lower() for m in msgs), \
@@ -418,6 +428,11 @@ async def main() -> int:
 
                     # ---- Scenario 10: Wrong password → login failed ----
                     _log("Test 10: wrong password (login should fail)...")
+                    # Need to /logout first (user is logged in from Test 6).
+                    await _reset_mock(client)
+                    await _push_command(client, CHAT_ID, USER_ID, "logout")
+                    await _wait_for_reply(client, CHAT_ID, timeout=10.0)
+                    # Now /login and send wrong password.
                     await _reset_mock(client)
                     await _push_command(client, CHAT_ID, USER_ID, "login")
                     await _wait_for_reply(client, CHAT_ID, match="password", timeout=10.0)
@@ -429,7 +444,7 @@ async def main() -> int:
 
                 print()
                 print("=" * 70)
-                print("  ALL 10 E2E TESTS PASSED")
+                print("  ALL E2E TESTS PASSED")
                 print("=" * 70)
                 return 0
             finally:
